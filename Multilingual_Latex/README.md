@@ -18,7 +18,7 @@ The script can be used in two ways:
 ### As a Python Script
 1. Clone this repository or download the script.
 2. Run the script using Python and pass the path of the text file you want to process. For example:
-python language_switcher.py yourfile.txt
+python multilingual_latex.py yourfile.txt
 3. The script will create a new file with the processed text in the same directory as the input file.
 
 ### As an Executable
@@ -30,7 +30,7 @@ python language_switcher.py yourfile.txt
 If you wish to build the executable yourself, follow these steps:
 
 1. Install PyInstaller:
-pyinstaller --onefile language_switcher.py
+pyinstaller --onefile multilingual_latex.py
 
 ## Additional Notes
 
