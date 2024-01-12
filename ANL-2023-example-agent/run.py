@@ -19,7 +19,7 @@ settings = {
     "agents": [
         {
             "class": "agents.the_negotiator.the_negotiator.TheNegotiator",
-            "parameters": {"storage_dir": "agent_storage/TUCStudentsTimeDependentAgent"},
+            "parameters": {"storage_dir": "agent_storage/TheNegotiator"},
         },
         {
             "class": "agents.template_agent.template_agent.TemplateAgent",
