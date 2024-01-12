@@ -16,7 +16,7 @@ from geniusweb.protocol.NegoSettings import NegoSettings
 from geniusweb.protocol.session.saop.SAOPState import SAOPState
 from geniusweb.simplerunner.ClassPathConnectionFactory import ClassPathConnectionFactory
 from geniusweb.simplerunner.NegoRunner import StdOutReporter
-from geniusweb.simplerunner.Runner import Runner
+from agents.the_negotiator.custom_runner import Runner          # used to be "from geniusweb.simplerunner.Runner import Runner"
 from pyson.ObjectMapper import ObjectMapper
 from uri.uri import URI
 
