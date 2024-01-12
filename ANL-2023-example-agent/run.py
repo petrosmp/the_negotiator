@@ -18,7 +18,7 @@ if not RESULTS_DIR.exists():
 settings = {
     "agents": [
         {
-            "class": "agents.tuc_students_agent.tuc_students_time_dependent_agent.TUCStudentsTimeDependentAgent",
+            "class": "agents.the_negotiator.the_negotiator.TheNegotiator",
             "parameters": {"storage_dir": "agent_storage/TUCStudentsTimeDependentAgent"},
         },
         {
