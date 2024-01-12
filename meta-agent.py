@@ -48,7 +48,9 @@ def find_available_agents(basedir):
 
 def playStrategy(strategy_id):
     return random.randint(0, 10)
-
+"""
+Meta Agent Class
+"""
 class MetaAgent():
 
     # Initial function
@@ -84,6 +86,13 @@ class MetaAgent():
         self.ucb[picked_strategy] = new_avg + np.sqrt(2 * np.log(self.total_plays)/self.play_count[picked_strategy])
         return picked_strategy
 
+"""
+ML class
+"""
+class LearningEnvironment:
+    def __init__(self) :
+        pass
+    
     """
     A meta-agent that will learn to select the best agent for the occasion
     """ 
