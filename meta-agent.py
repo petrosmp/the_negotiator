@@ -194,7 +194,9 @@ import inspect
 #         ucb[agent_id] = new_avg + np.sqrt(2 * np.log(T)/play_counts[agent_id])
 
     
-
+"""
+Get the strategies from the subfolder and assign an id to them
+"""
 def find_available_agents(basedir):
     agents = []
       # Adjusted to full path
