@@ -5,8 +5,6 @@ import traceback
 from typing import cast, Dict, List, Set, Collection
 
 ### ML imports
-import random
-import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
@@ -17,11 +15,75 @@ from sklearn.metrics import accuracy_score
 
 ### File Manager
 import os
-import glob
 import importlib
-import inspect
+
+### Maths
+import random
+import numpy as np
+
+"""
+Helper Methods
+"""
+
+"""
+Get the strategies from the subfolder and assign an id to them
+"""
+def find_available_agents(basedir):
+    agents = []
+      # Adjusted to full path
+    strategy_folders = [f.path for f in os.scandir(basedir) if f.is_dir()]
+    id = 0
+    for folder in strategy_folders:
+        strategy_name = os.path.basename(folder)
+        # Assuming there's only one Python file per strategy folder
+        
+        for python_file in os.listdir(folder):
+            if python_file.endswith('.py'):
+                module_name = os.path.splitext(python_file)[0]
+                class_path = f"strategies.{strategy_name}.{module_name}.{module_name}"
+                # TODO import class
+                agents.append({"class": class_path, "agent_id": id})
+                id += 1
+    return agents
+
+def playStrategy(strategy_id):
+    return random.randint(0, 10)
 
 class MetaAgent():
+
+    # Initial function
+    def __init__(self): #, reporter: Reporter = None):
+        self.agent_classes = find_available_agents(os.path.join(os.path.dirname(os.path.abspath(__file__)),"strategies"))
+        self.number_of_agents = len(self.agent_classes)
+
+        """ UCB inits"""
+        k = self.number_of_agents
+        self.play_count = np.zeros((k,))             # arm pulls
+        self.total_plays = 0                         # total arm pulls
+        self.average_performance = np.zeros((k,))    # average performance for negotiation round
+        self.ucb = np.zeros((k,))                    # ucb estimate for each arm
+    
+
+    # pick the arm/server with the biggest UCB
+    def pick_strategy(self):
+        picked_strategy = np.argmax(self.ucb)
+        return picked_strategy
+
+    # Given agent_id, update its UCB score
+    def UCB_round(self, pick_strategy, reward):
+
+        self.play_count[picked_strategy] += 1
+        self.total_plays += 1
+
+        # Update average reward
+        old_avg = self.average_performance[picked_strategy]
+        new_avg = (old_avg * (self.play_count[picked_strategy] - 1) + reward)/self.play_count[picked_strategy]
+        self.average_performance[picked_strategy] = new_avg
+        
+        # Update UCB value
+        self.ucb[picked_strategy] = new_avg + np.sqrt(2 * np.log(self.total_plays)/self.play_count[picked_strategy])
+        return picked_strategy
+
     """
     A meta-agent that will learn to select the best agent for the occasion
     """ 
@@ -135,12 +197,6 @@ class MetaAgent():
     #             super().terminate()
     #         else:
     #             self.logger.log(logging.WARNING, "Ignoring unknown info " + str(data))
-def UCB(number_of_agents):
-    """
-    UCB-MAB
-    """
-
-    
     # """
     # Testing
     # """
@@ -157,67 +213,12 @@ def UCB(number_of_agents):
     # df.to_csv('agent_performance_data.csv', index=False)
     # loaded_df = pd.read_csv('agent_performance_data.csv')
 
-       
-# TODO return performance
-
-def playStrategy(strategy_id):
-    
-    return random.randint(0, 10)
-
-# pick the arm/server with the biggest UCB
-# Given agent_id, update its UCB score
-def UCB_round(ucb, play_count, average_performance, total_plays):
-    picked_strategy = np.argmax(ucb)
-    reward = playStrategy(picked_strategy)
-
-    play_count[picked_strategy] += 1
-    total_plays += 1
-
-    # Update average reward
-    old_avg = average_performance[picked_strategy]
-    new_avg = (old_avg * (play_count[picked_strategy] - 1) + reward)/play_count[picked_strategy]
-    average_performance[picked_strategy] = new_avg
-    
-    # Update UCB value
-    ucb[picked_strategy] = new_avg + np.sqrt(2 * np.log(total_plays)/play_count[picked_strategy])
-
-    
-"""
-Get the strategies from the subfolder and assign an id to them
-"""
-def find_available_agents(basedir):
-    agents = []
-      # Adjusted to full path
-    strategy_folders = [f.path for f in os.scandir(basedir) if f.is_dir()]
-    id = 0
-    for folder in strategy_folders:
-        strategy_name = os.path.basename(folder)
-        # Assuming there's only one Python file per strategy folder
-        
-        for python_file in os.listdir(folder):
-            if python_file.endswith('.py'):
-                module_name = os.path.splitext(python_file)[0]
-                class_path = f"strategies.{strategy_name}.{module_name}.{module_name}"
-                # TODO import class
-                agents.append({"class": class_path, "agent_id": id})
-                id += 1
-    return agents
-
 # Usage
 # print("Current Working Directory:", os.getcwd())
 # base_directory = 'c:/Users/jchri/Documents/GitHub/the_negotiator/strategies'
 
-# Initial function
-def __init__(self):#, reporter: Reporter = None):
-    strategies_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)),"strategies")
-    print("Script directory:", strategies_directory)
-    agent_classes = find_available_agents(strategies_directory)
-    number_of_agents = len(agent_classes)
+meta = MetaAgent()
 
-    """ UCB inits"""
-    k = number_of_agents
-    play_count = np.zeros((k,))             # arm pulls
-    total_plays = 0                         # total arm pulls
-    average_performance = np.zeros((k,))    # average performance for negotiation round
-    ucb = np.zeros((k,))                    # ucb estimate for each arm
-
+picked_strategy = meta.pick_strategy()
+reward = playStrategy(picked_strategy)
+meta.UCB_round(picked_strategy, reward)
