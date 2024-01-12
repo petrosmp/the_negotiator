@@ -86,11 +86,27 @@ class TheNegotiator(DefaultParty):
                 # Enter setting information. This is called once at the beginning of a session.
                 # This is where we first see the domain, and thus where we extract the features
                 # and select the agent that we will play as.
-                print(f"\n\nyo im {self.__class__.__name__} and i got settings!\n\n")
+
+                print(f"\n\n\nyo im {self.__class__.__name__} and i got settings!\n\n")
                 self._settings = info
+                
+                # unpack the settings and store them as class variables for future reference
                 self._me = self._settings.getID()
-                self._progress = self._settings.getProgress()
-                newe = self._settings.getParameters().get("e")
+                self._progress = self._settings.getProgress()               # progress towards the deadline has to be tracked manually through the use of the Progress object
+                self._parameters = self._settings.getParameters()            # what are parameters? https://tracinsy.ewi.tudelft.nl/pubtrac/GeniusWeb/wiki/WikiStart#PartyParameters
+                self._storage_dir = self._parameters.get("storage_dir")
+
+                # in order to get the profile (preferences) and the domain info we need a connection
+                profile_connection = ProfileConnectionFactory.create(
+                    info.getProfile().getURI(), self.getReporter()
+                )
+                self._profile = profile_connection.getProfile()
+                self._domain = self._profile.getDomain()
+                self._all_bids = AllBidsList(self._domain)                  # compose a list of all possible bids
+                profile_connection.close()            
+
+                # from here on out is the tucstudentagent code.
+                newe = self._settings.getParameters().get("e")  # what is e?
                 if newe != None:
                     if isinstance(newe, float):
                         self._e = newe
@@ -107,8 +123,13 @@ class TheNegotiator(DefaultParty):
             elif isinstance(info, YourTurn):
                 self._delayResponse()
                 self._myTurn()
+
             elif isinstance(info, Finished):
-                self.getReporter().log(logging.INFO, "Final outcome:" + str(info))
+                # The negotiation session has now ended. Get the utility of the deal, store it somewhere and go next.
+                deal: Bid = next(iter(info.getAgreements().getMap().values()))
+                utility = self._utilspace.getUtility(deal)
+
+                self.getReporter().log(logging.INFO, f"Final outcome: bid={deal} giving us a utility of: {utility}")
                 self.terminate()
                 # stop this party and free resources.
         except Exception as ex:

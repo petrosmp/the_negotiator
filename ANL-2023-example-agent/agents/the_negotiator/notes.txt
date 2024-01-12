@@ -1,0 +1,63 @@
+1) TheNegotiator has the following class variables that contain data describing the domain it finds itself in.
+
+    - self._domain:
+        ._name = the name of the domain (as in the folder containing it, e.g. "domain00")
+
+        ._issuesValues = {
+            'issueA': DiscreteValueSet["valueA", "valueB", "valueC"],
+            'issueB': DiscreteValueSet["valueA", "valueB", "valueC", "valueD", "valueE", "valueF", "valueG", "valueH"],
+            'issueC': DiscreteValueSet["valueA", "valueB"],
+            'issueD': DiscreteValueSet["valueA", "valueB", "valueC", "valueD", "valueE", "valueF", "valueG", "valueH", "valueI"],
+            'issueE': DiscreteValueSet["valueA", "valueB", "valueC", "valueD", "valueE", "valueF", "valueG", "valueH", "valueI", "valueJ", "valueK", "valueL", "valueM", "valueN", "valueO"]
+        }
+
+    - self._profile:
+        ._domain = see self._domain
+
+        . _name = "profileA"
+
+        ._reservationBid = None (the reservation value of the profile)
+
+        ._issueUtilities = {
+            'issueA': DiscreteValueSetUtilities{"valueA"=0.0, "valueB"=1.0, "valueC"=0.03156},
+            'issueB': DiscreteValueSetUtilities{"valueA"=0.02854, "valueB"=0.0, "valueC"=0.18426, "valueD"=0.16216, "valueE"=1.0, "valueF"=0.01914, "valueG"=0.58154, "valueH"=0.23052},
+            'issueC': DiscreteValueSetUtilities{"valueA"=1.0, "valueB"=0.0},
+            'issueD': DiscreteValueSetUtilities{"valueA"=0.47162, "valueB"=0.15076, "valueC"=0.49341, "valueD"=0.0, "valueE"=0.68999, "valueF"=0.51706, "valueG"=0.25717, "valueH"=1.0, "valueI"=0.20764},
+            'issueE': DiscreteValueSetUtilities{"valueA"=0.34474, "valueB"=0.79995, "valueC"=0.06008, "valueD"=0.03069, "valueE"=0.44156, "valueF"=0.03404, "valueG"=0.01181, "valueH"=0.29136, "valueI"=0.09436, "valueJ"=0.0, "valueK"=0.87914, "valueL"=0.15109, "valueM"=1.0, "valueN"=0.14738, "valueO"=0.14876}}
+
+        ._issueWeights: {
+            'issueA': Decimal('0.06667'),
+            'issueB': Decimal('0.04186'),
+            'issueC': Decimal('0.07844'),
+            'issueD': Decimal('0.70691'),
+            'issueE': Decimal('0.10612')
+        }     
+
+    - self._parameters:
+        ._params = {
+            'storage_dir': 'agent_storage/TUCStudentsTimeDependentAgent'
+        }
+
+2) In order to get the utility of a bid (aka an offer), we do:
+        
+        self._utilspace.getUtility(bid)
+    
+    Let's unpack this:
+        - self._utilspace is set to None in the constructor
+        - it is then set in the following function, which _myTurn() calls (and is thus called every time we get an offer - why do we need to update our profile that often?)
+
+            def _updateUtilSpace(self) -> LinearAdditive:  # throws IOException
+                newutilspace = self._profileint.getProfile()
+                if not newutilspace == self._utilspace:
+                    self._utilspace = cast(LinearAdditive, newutilspace)
+                    self._extendedspace = ExtendedUtilSpace(self._utilspace)
+                return self._utilspace
+
+        - note that newutilspace is actualy an instance of geniusweb.profile.Profile.Profile, which is
+          just cast to geniusweb.profile.utilityspace.LinearAdditive.LinearAdditive (that -guess what-
+          extends Profile)
+        
+        - getUtility(bid) is thus a method of geniusweb.profile.utilityspace.LinearAdditiveUtilitySpace.LinearAdditiveUtilitySpace
+          (which is the class the profiles actually have, and -guess what- extends LinearAdditive). We can
+          see that it uses the profile's data (issues, values, weights and whatnot) and our agent uses it,
+          so our agent is allowed to use that data.
