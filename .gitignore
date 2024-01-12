@@ -3,3 +3,4 @@ pyvenv.cfg
 Lib/
 Scripts/
 Include/
+!Lib/site-packages/geniusweb/simplerunner/Runner.py
