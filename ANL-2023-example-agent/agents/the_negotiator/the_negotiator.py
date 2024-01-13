@@ -34,6 +34,7 @@ from geniusweb.utils import val
 from geniusweb.profileconnection.ProfileInterface import ProfileInterface
 from geniusweb.profile.utilityspace.LinearAdditive import LinearAdditive
 from geniusweb.profile.utilityspace.LinearAdditiveUtilitySpace import LinearAdditiveUtilitySpace
+from geniusweb.profile.utilityspace.DiscreteValueSetUtilities import DiscreteValueSetUtilities
 from geniusweb.progress.Progress import Progress
 from tudelft.utilities.immutablelist.ImmutableList import ImmutableList
 from time import sleep, time as clock
@@ -43,7 +44,7 @@ from agents.time_dependent_agent.extended_util_space import ExtendedUtilSpace
 from tudelft_utilities_logging.Reporter import Reporter
 from geniusweb.references.Parameters import Parameters
 from pathlib import Path
-
+import numpy as np
 
 from .arsenal import arsenal
 from .arsenal.agent007 import Agent007
@@ -108,7 +109,7 @@ class TheNegotiator(DefaultParty):
                 profile_connection = ProfileConnectionFactory.create(
                     info.getProfile().getURI(), self.getReporter()
                 )
-                self._profile: LinearAdditiveUtilitySpace = profile_connection.getProfile()
+                self._profile: LinearAdditiveUtilitySpace = cast(LinearAdditiveUtilitySpace, profile_connection.getProfile())
                 self._domain = self._profile.getDomain()
                 self._all_bids = AllBidsList(self._domain)                  # compose a list of all possible bids
                 profile_connection.close()            
@@ -319,7 +320,38 @@ class TheNegotiator(DefaultParty):
 
     def _extract_features(self):
         """Extract the features that are useful in picking a strategy from the current domain"""
-        pass
+        
+        feat_dict = {}
+
+        weights: Dict[str, Decimal] = self._profile.getWeights()
+
+        # 1) number of issues in domain
+        feat_dict.update({"num_of_issues": len(weights)})
+
+        # 2) average number of values per issue (sponsored by Misko)
+        feat_dict.update({
+            "avg_vals_per_issue": np.average([len(x.getUtilities()) for x in [cast(DiscreteValueSetUtilities, y) for y in self._profile.getUtilities().values()]])
+        })
+
+        # 3) number of possible bids
+        feat_dict.update({"num_of_bids": self._all_bids.size()})
+
+        # 4) standard deviation of weights
+        feat_dict.update({"weight_std_dev": np.std(list(weights.values()))})
+
+        # 5) average bid utility
+        bid_utils = []
+        for i in range(self._all_bids.size()): 
+            bid = self._all_bids.get(i)
+            bid_utils.append(np.float64(self._profile.getUtility(bid)))
+
+        feat_dict.update({"avg_bid_util": np.average(bid_utils)})
+
+        # "6) standard deviation of bid utility
+        feat_dict.update({"bid_util_std_dev": np.std(bid_utils)})
+
+        return feat_dict
+
 
     def set_connection_data(self, data):
         """Setter for the custom connection to use in order to send us the data"""
