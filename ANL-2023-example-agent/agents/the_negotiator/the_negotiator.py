@@ -42,9 +42,11 @@ import sys
 from agents.time_dependent_agent.extended_util_space import ExtendedUtilSpace
 from tudelft_utilities_logging.Reporter import Reporter
 from geniusweb.references.Parameters import Parameters
+from pathlib import Path
 
 
 from .arsenal import arsenal
+from .arsenal.agent007 import Agent007
 
 class TheNegotiator(DefaultParty):
     """Class implementing the negotiator agent."""
@@ -118,24 +120,25 @@ class TheNegotiator(DefaultParty):
                 self._strat.set_proxy(self)
                 self._strat_str = f"{self._strat.__class__.__module__}.{self._strat.__class__.__name__}"
                 
-                # create a new param set (so that the strategy agent has its own directory)
-                storage_dir = self._parameters.get("storage_dir").replace(self.__class__.__name__, self._strat.__class__.__name__)
-                parameters = Parameters({
-                    "storage_dir": storage_dir
-                })
+                # create a new directory for the strategy agent
+                own_storage_dir = Path(self._parameters.get("storage_dir"))
+                strategy_storage_dir = own_storage_dir / self._strat.__class__.__name__
+                
+                # if it already exists, no need to create it anew
+                if not strategy_storage_dir.exists():
+                    strategy_storage_dir.mkdir()
 
-                # we need to create other settings to pass to the real agent
+                # create a new set of settings (only the parameters differ) to pass to the strategy agent
                 newinfo = Settings(
                     self._me,        # id
                     info.getProfile(),  # profile
                     info.getProtocol(), # protocol
                     info.getProgress(), # progress
-                    parameters          # parameters
+                    Parameters({"storage_dir": strategy_storage_dir}) # parameters
                 )
 
                 # pass the info to the strat
                 self._strat.notifyChange(newinfo)
-                
 
             elif isinstance(info, ActionDone):
                 self._strat.notifyChange(info)
