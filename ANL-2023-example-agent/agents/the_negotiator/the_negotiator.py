@@ -47,6 +47,9 @@ from geniusweb.references.Parameters import Parameters
 from .arsenal import arsenal
 from .arsenal.tuc_students_time_dependent_agent import TUCStudentsTimeDependentAgent
 from .arsenal.linear_agent import LinearAgent
+from .arsenal.boulware_agent import BoulwareAgent
+from .arsenal.conceder_agent import ConcederAgent
+from .arsenal.hardliner_agent import HardlinerAgent
 
 class TheNegotiator(DefaultParty):
     """Class implementing the negotiator agent."""
@@ -152,7 +155,7 @@ class TheNegotiator(DefaultParty):
                 try:
                     deal: Bid = next(iter(info.getAgreements().getMap().values()))
                     utility = self._profile.getUtility(deal)
-                    self.getReporter().log(logging.INFO, f"Final outcome: bid={deal} giving us a utility of: {utility}")
+                    self.getReporter().log(logging.INFO, f"Final outcome: bid={deal} giving us a utility of: {utility} (special thanks to {self._strat.__class__.__name__})")
                 except StopIteration:
                     self.getReporter().log(logging.INFO, "no agreement reached!")
                     print("no agreement reached!\n\n")
@@ -161,8 +164,6 @@ class TheNegotiator(DefaultParty):
                 self._strat.notifyChange(info)
                 self.terminate()
                 # stop this party and free resources.
-            else:
-                self._strat.notifyChange(info)
         except Exception as ex:
             self.getReporter().log(logging.CRITICAL, "Failed to handle info", ex)
         self._updateRound(info)
@@ -312,7 +313,7 @@ class TheNegotiator(DefaultParty):
 
         features = self._extract_features()
 
-        instance = LinearAgent()
+        instance = HardlinerAgent()
 
         return instance
 
