@@ -22,8 +22,6 @@ class CustomConnection:
 		@throws ConnectionError if the data failed to be sent.
 		'''
 
-        print(f"Interrupted call to connection.send(). Sending to proxy {self._proxy.__class__.__name__} instead.")
-
         self._proxy.set_connection_data(data)
 
 
@@ -57,8 +55,6 @@ class ConnectionInterceptMixin:
 
     def getConnection(self):
         """Return an object that will redirect anything being sent to the connection to the proxy agent"""
-
-        print(f"interrupted call to getConnection(). Returning custom one.")
 
         try:
             return self._proxy_connection
