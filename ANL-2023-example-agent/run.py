@@ -18,8 +18,8 @@ if not RESULTS_DIR.exists():
 settings = {
     "agents": [
         {
-            "class": "agents.tuc_students_agent.tuc_students_time_dependent_agent.TUCStudentsTimeDependentAgent",
-            "parameters": {"storage_dir": "agent_storage/TUCStudentsTimeDependentAgent"},
+            "class": "agents.the_negotiator.the_negotiator.TheNegotiator",
+            "parameters": {"storage_dir": "agent_storage/TheNegotiator"},
         },
         {
             "class": "agents.template_agent.template_agent.TemplateAgent",
@@ -31,7 +31,7 @@ settings = {
 }
 
 # run a session and obtain results in dictionaries
-session_results_trace, session_results_summary = run_session(settings)
+session_results_trace, session_results_summary = run_session(settings, verbose=False)
 
 # plot trace to html file
 if not session_results_trace["error"]:

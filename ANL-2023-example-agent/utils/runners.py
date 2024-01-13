@@ -16,14 +16,14 @@ from geniusweb.protocol.NegoSettings import NegoSettings
 from geniusweb.protocol.session.saop.SAOPState import SAOPState
 from geniusweb.simplerunner.ClassPathConnectionFactory import ClassPathConnectionFactory
 from geniusweb.simplerunner.NegoRunner import StdOutReporter
-from geniusweb.simplerunner.Runner import Runner
+from .custom_runner import Runner          # used to be "from geniusweb.simplerunner.Runner import Runner"
 from pyson.ObjectMapper import ObjectMapper
 from uri.uri import URI
 
 from utils.ask_proceed import ask_proceed
 
 
-def run_session(settings) -> Tuple[dict, dict]:
+def run_session(settings, verbose:bool) -> Tuple[dict, dict]:
     agents = settings["agents"]
     profiles = settings["profiles"]
     deadline_time_ms = settings["deadline_time_ms"]
@@ -88,7 +88,7 @@ def run_session(settings) -> Tuple[dict, dict]:
     settings_obj = ObjectMapper().parse(settings_full, NegoSettings)
 
     # create the negotiation session runner object
-    runner = Runner(settings_obj, ClassPathConnectionFactory(), StdOutReporter(), 0)
+    runner = Runner(settings_obj, ClassPathConnectionFactory(), StdOutReporter(), 0, verbose=verbose)
 
     # run the negotiation session
     runner.run()
