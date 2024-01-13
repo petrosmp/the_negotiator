@@ -1,5 +1,5 @@
 import logging
-from random import randint, random
+from random import randint, random, choice as random_choice
 import traceback
 from typing import cast, Dict, List, Set, Collection
 
@@ -45,11 +45,6 @@ from geniusweb.references.Parameters import Parameters
 
 
 from .arsenal import arsenal
-from .arsenal.tuc_students_time_dependent_agent import TUCStudentsTimeDependentAgent
-from .arsenal.linear_agent import LinearAgent
-from .arsenal.boulware_agent import BoulwareAgent
-from .arsenal.conceder_agent import ConcederAgent
-from .arsenal.hardliner_agent import HardlinerAgent
 
 class TheNegotiator(DefaultParty):
     """Class implementing the negotiator agent."""
@@ -313,7 +308,9 @@ class TheNegotiator(DefaultParty):
 
         features = self._extract_features()
 
-        instance = HardlinerAgent()
+        clas = random_choice(arsenal)
+
+        instance = clas()
 
         return instance
 
