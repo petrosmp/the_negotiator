@@ -164,45 +164,52 @@ class AgentLearningNN:
         # The NN will have as many neurons as number of features and number of neurons as  number of outputs
         model = tf.keras.Sequential([
             tf.keras.layers.Dense(hidden_layer_size, activation='relu', input_shape=(self._input_features,)),
-            tf.keras.layers.Dense(hidden_layer_size, activation='relu'),
-            tf.keras.layers.Dense(self._num_agents, activation='softmax')  # Output layer with one node per agent
+            #tf.keras.layers.Dense(hidden_layer_size, activation='relu'),
+            tf.keras.layers.Dense(self._num_agents, activation='relu')  # Output layer with sigmoid activation to map to value between 0 and 1, one node per agent
         ])
-        # Use some default optimizer (adam) and sparse_categorical_crossentropy loss function with accuracy as a metric
+        # Use some default optimizer (adam) and mean_squared_error loss function
         model.compile(optimizer='adam',
-                      loss='sparse_categorical_crossentropy',
-                      metrics=['accuracy'])
+                      loss='mean_squared_error')
+                      #metrics=['accuracy'])
         return model
 
     # On new data, do a forward pass (and backpropagation)
     # X and y must be converted to numpy for it to work
     # y is the target variable "agent_id"
-    def train_model(self, agent_id, score, domain_data):
-        new_entry = {'agent_id': agent_id, 'score': score, 'domain_data': domain_data}
-        new_entry_df = pd.DataFrame([new_entry])
-        self.data = pd.concat([self.data, new_entry_df], ignore_index=True)
-        # all data except agent_id
-        X = (self.data.drop('agent_id', axis=1)).to_numpy
-        # agent_id is the target, will try to predict it
-        y = (self.data['agent_id']).to_numpy
+    def train_model(self, agent_scores, domain_data):
+        # new_entry = {'agent_scores': agent_scores, 'domain_data': domain_data}
+        # new_entry_df = pd.DataFrame([new_entry])
+        # self.data = pd.concat([self.data, new_entry_df], ignore_index=True)
+        # domain_features = np.array([domain_data])
+
+        feature_values = np.array(list(domain_data.values()))
+
+        domain_features = feature_values.reshape(1, -1)
+        X = domain_features
+        y = np.array([agent_scores])
+
+        print("X:", X.shape)
+        print("y:", y.shape)
         # Model training step
         # TODO change epochs
         self.model.fit(X, y, epochs=10)
 
-    # Gets "probabilities" for each agent
+    # Gets predicted scores for each agent
     # This is useful to initialize the UCB algorithm with meaningful data, learned from the utility gained on specific negotiation domains 
-    def predict_probabilities(self, domain_data):
+    def predict_scores(self, domain_data):
         # Tensorflow needs numpy array to work
-        features = np.array([domain_data])
+        feature_values = np.array(list(domain_data.values()))
+        feature_values = feature_values.reshape(1, -1)
         # The neural network can give probabilities for each agent
-        probabilities = self.model.predict_probabilities(features)
-        return probabilities
+        scores_prediction = self.model.predict(feature_values)
+        return scores_prediction
     
     # Unused, for testing purposes
     def predict_agent(self, domain_data):
         # Tensorflow needs numpy array to work
         features = np.array([domain_data])
         #features = {'domain_data': domain_data}
-        probabilities = self.predict_probabilities(features)
+        probabilities = self.model.predict(features)
         return np.argmax(probabilities)
 
 # Usage
@@ -215,5 +222,31 @@ picked_strategy = meta.pick_strategy()
 reward = playStrategy(picked_strategy)
 meta.UCB_round(picked_strategy, reward)
 
-ml = AgentLearningNN(10, 5)
+agent_nn = AgentLearningNN(5, 6, 5)
 
+
+# Initialize an empty list to store the generated data
+data_samples = []
+
+# Generate 100 random data samples
+for i in range(10):
+    # Generate random key-value pairs for feat_dict
+    feat_dict = {
+        "num_of_issues": np.random.randint(1, 11),  # Random number of issues (1-10)
+        "avg_vals_per_issue": np.random.uniform(0.5, 5.0),  # Random average values per issue (0.5-5.0)
+        "num_of_bids": np.random.randint(100, 1000),  # Random number of possible bids (100-1000)
+        "weight_std_dev": np.random.uniform(0.1, 1.0),  # Random weight standard deviation (0.1-1.0)
+        "avg_bid_util": np.random.uniform(0.2, 0.8),  # Random average bid utility (0.2-0.8)
+        "bid_util_std_dev": np.random.uniform(0.05, 0.2)  # Random bid utility standard deviation (0.05-0.2)
+    }
+
+    # Generate agent_scores with Agent 3 having the best score (e.g., 0.9) and Agent 4 having the worst score (e.g., 0.1)
+    num_agents = 5
+    agent_scores = np.random.uniform(0.1, 0.9, size=num_agents)
+    #agent_scores = np.zeros(5)
+    agent_scores[0] = 0.9  # Set Agent 3's score to the highest value
+    agent_scores[3] = 0.0  # Set Agent 4's score to the lowest value
+    agent_nn.train_model(agent_scores,feat_dict)
+    # Append the generated data as a tuple (feat_dict, agent_scores)
+    #data_samples.append((feat_dict, agent_scores))
+    print(agent_nn.predict_scores(feat_dict))
