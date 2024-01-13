@@ -180,10 +180,16 @@ class AgentLearningNN:
         # new_entry = {'agent_scores': agent_scores, 'domain_data': domain_data}
         # new_entry_df = pd.DataFrame([new_entry])
         # self.data = pd.concat([self.data, new_entry_df], ignore_index=True)
-        domain_features = np.array([domain_data])
-        X = np.array([domain_features])
+        # domain_features = np.array([domain_data])
+
+        feature_values = np.array(list(domain_data.values()))
+
+        domain_features = feature_values.reshape(1, -1)
+        X = domain_features
         y = np.array([agent_scores])
 
+        print("X:", X.shape)
+        print("y:", y.shape)
         # Model training step
         # TODO change epochs
         self.model.fit(X, y, epochs=10)
@@ -215,5 +221,30 @@ picked_strategy = meta.pick_strategy()
 reward = playStrategy(picked_strategy)
 meta.UCB_round(picked_strategy, reward)
 
-ml = AgentLearningNN(5, 6, 24)
+agent_nn = AgentLearningNN(5, 6, 24)
 
+
+# Initialize an empty list to store the generated data
+data_samples = []
+
+# Generate 100 random data samples
+for _ in range(100):
+    # Generate random key-value pairs for feat_dict
+    feat_dict = {
+        "num_of_issues": np.random.randint(1, 11),  # Random number of issues (1-10)
+        "avg_vals_per_issue": np.random.uniform(0.5, 5.0),  # Random average values per issue (0.5-5.0)
+        "num_of_bids": np.random.randint(100, 1000),  # Random number of possible bids (100-1000)
+        "weight_std_dev": np.random.uniform(0.1, 1.0),  # Random weight standard deviation (0.1-1.0)
+        "avg_bid_util": np.random.uniform(0.2, 0.8),  # Random average bid utility (0.2-0.8)
+        "bid_util_std_dev": np.random.uniform(0.05, 0.2)  # Random bid utility standard deviation (0.05-0.2)
+    }
+
+    # Generate agent_scores with Agent 3 having the best score (e.g., 0.9) and Agent 4 having the worst score (e.g., 0.1)
+    num_agents = 5
+    agent_scores = np.random.uniform(0.1, 0.9, size=num_agents)
+    agent_scores[2] = 0.9  # Set Agent 3's score to the highest value
+    agent_scores[3] = 0.1  # Set Agent 4's score to the lowest value
+    agent_nn.train_model(agent_scores,feat_dict)
+    # Append the generated data as a tuple (feat_dict, agent_scores)
+    #data_samples.append((feat_dict, agent_scores))
+agent_nn.predict_scores()
