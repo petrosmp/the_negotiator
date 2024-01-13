@@ -6,9 +6,7 @@ from typing import cast, Dict, List, Set, Collection
 
 ### ML imports
 import pandas as pd
-from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score
 
 ### Genius Web 
 # from geniusweb.party.DefaultParty import DefaultParty
@@ -89,8 +87,49 @@ class MetaAgent():
 """
 ML class
 """
-class LearningEnvironment:
+# The goal is to pre-train the UCB algorithm confidence bounds based on prior ML tests
+class AgentLearning:
+    r_state = 69 # nice
     def __init__(self) :
+        # Choosing an ML model
+        self.model = RandomForestClassifier(random_state = self.r_state)
+        # TODO
+        self.data = pd.DataFrame()
+
+    def add_data(self, agent_id, domain_data, score, other_domain_features):
+        """ Add new data to the dataset, replicating entries based on score. """
+        # TODO implement domain data
+        new_entry = {'agent_id': agent_id, 'domain_data': domain_data}
+        new_entry.update(other_domain_features)
+        new_entry_df = pd.DataFrame([new_entry])
+
+        # Replicate the entry based on the score
+        replication_factor = self.calculate_replication_factor(score)
+        replicated_data = pd.concat([new_entry_df] * replication_factor, ignore_index=True)
+        self.data = pd.concat([self.data, replicated_data], ignore_index=True)
+    
+    # Give more weight to good scores by replicating the data entered in the dataset
+    def calculate_replication_factor(score):
+        return 5 if score > 0.9 else 4 if score > 0.85 else 2 if score > 0.75 else 1
+
+    def train_model(self):
+        # all data except agent_id
+        X = self.data.drop('agent_id', axis=1)
+        # agent_id is the target, will try to predict it
+        y = self.data['agent_id']
+        # Model training step
+        self.model.fit(X, y)
+
+    def predict(self, domain_data, other_domain_features):
+        features = {'domain_data': domain_data}
+        #features.update(other_domain_features)
+        features_df = pd.DataFrame([features])
+        return self.model.predict(features_df)
+    
+    # Give an estimate for each player based on the domain data? No
+    # We must make simpler training *Unrelated* to domains to see if the agent is the best
+    def cookPriors(self):
+        self.model
         pass
     
     """
