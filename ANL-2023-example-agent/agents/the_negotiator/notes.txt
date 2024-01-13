@@ -69,3 +69,16 @@
    It is the class that the profile that we get from the settings object at the beggining of
    the session is an instance of. It has getters for utilities and weights, and a link to the
    domain which in turn has a getter for the issues and values.
+
+
+4)  The data that the mixin captures is is of type geniusweb.actions.Action.Action, more specifically
+    either Accept, Offer or EndNegotiation. Since there are no reservation utilities in the domains
+    we study (and no agent seems to use it) the EndNegotiation action can be ignored. We thus only
+    expect to see either Accepts or Offers, which both extend geniusweb.actions.ActionWithBid.ActionWithBid
+    and have the following structure:
+    
+        actor: PartyId,
+        bid: Bid
+    
+    We don't even need to change the PartyId if we make the strategy agent have the same ID as us, which
+    is totally fine since it does not interact with anyone else. Straight up stealing.
