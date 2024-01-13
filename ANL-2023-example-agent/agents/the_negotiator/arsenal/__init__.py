@@ -16,6 +16,6 @@ you want to use an agent that does not satisf the criteria above, make
 a new agent that satisfies them and use it as a proxy.
 """
 
-__all__ = [arsenal]
+__all__ = ["arsenal"]
 
 from .__arsenal__ import arsenal

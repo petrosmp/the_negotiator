@@ -61,3 +61,11 @@
           (which is the class the profiles actually have, and -guess what- extends LinearAdditive). We can
           see that it uses the profile's data (issues, values, weights and whatnot) and our agent uses it,
           so our agent is allowed to use that data.
+
+3) In order to get domain and profile info without accessing protected variables, check out
+        
+        geniusweb.profile.utilityspace.LinearAdditiveUtilitySpace.LinearAdditiveUtilitySpace
+   
+   It is the class that the profile that we get from the settings object at the beggining of
+   the session is an instance of. It has getters for utilities and weights, and a link to the
+   domain which in turn has a getter for the issues and values.

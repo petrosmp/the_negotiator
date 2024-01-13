@@ -5,6 +5,7 @@ from typing import cast, Dict, List, Set, Collection
 
 from geniusweb.actions.Accept import Accept
 from geniusweb.actions.Action import Action
+from geniusweb.actions.ActionWithBid import ActionWithBid
 from geniusweb.actions.LearningDone import LearningDone
 from geniusweb.actions.Offer import Offer
 from geniusweb.actions.PartyId import PartyId
@@ -32,6 +33,7 @@ from geniusweb.progress.ProgressRounds import ProgressRounds
 from geniusweb.utils import val
 from geniusweb.profileconnection.ProfileInterface import ProfileInterface
 from geniusweb.profile.utilityspace.LinearAdditive import LinearAdditive
+from geniusweb.profile.utilityspace.LinearAdditiveUtilitySpace import LinearAdditiveUtilitySpace
 from geniusweb.progress.Progress import Progress
 from tudelft.utilities.immutablelist.ImmutableList import ImmutableList
 from time import sleep, time as clock
@@ -39,7 +41,11 @@ from decimal import Decimal
 import sys
 from agents.time_dependent_agent.extended_util_space import ExtendedUtilSpace
 from tudelft_utilities_logging.Reporter import Reporter
+from geniusweb.references.Parameters import Parameters
 
+
+from .arsenal import arsenal
+from .arsenal.tuc_students_time_dependent_agent import TUCStudentsTimeDependentAgent
 
 class TheNegotiator(DefaultParty):
     """Class implementing the negotiator agent."""
@@ -55,6 +61,7 @@ class TheNegotiator(DefaultParty):
         self._e: float = 1.2
         self._lastvotes: Votes = None  # type:ignore
         self._settings: Settings = None  # type:ignore
+        self._connection_data: ActionWithBid = None
         self.getReporter().log(logging.INFO, "party is initialized")
 
     # Competition type (do not change this function)
@@ -100,38 +107,102 @@ class TheNegotiator(DefaultParty):
                 profile_connection = ProfileConnectionFactory.create(
                     info.getProfile().getURI(), self.getReporter()
                 )
-                self._profile = profile_connection.getProfile()
+                self._profile: LinearAdditiveUtilitySpace = profile_connection.getProfile()
                 self._domain = self._profile.getDomain()
                 self._all_bids = AllBidsList(self._domain)                  # compose a list of all possible bids
                 profile_connection.close()            
 
-                # from here on out is the tucstudentagent code.
-                newe = self._settings.getParameters().get("e")  # what is e?
-                if newe != None:
-                    if isinstance(newe, float):
-                        self._e = newe
-                    else:
-                        self.getReporter().log(
-                            logging.WARNING,
-                            "parameter e should be Double but found " + str(newe),
-                        )
-                self._profileint = ProfileConnectionFactory.create(self._settings.getProfile().getURI(), self.getReporter()) #TODO
+                # we now have enough data to calculate anything we want. its time to pick a strat.
+                print(f"going to pick...")
+                self.strat = self._pick_strategy()
+                print(f"back again")
+
+                # set ourselves as a proxy for the strategy agent
+                self.strat.set_proxy(self)
+
+                self._role = str(self._me)[-1]
+                print(f"im role {self._role}")
+                self._strat_str = f"{self.strat.__class__.__module__}.{self.strat.__class__.__name__}"
+                
+                # turn the string representation of the selected strategy into an ID - i.e. replace dots with underscores and append the role (1 or 2)
+                id = f"{self._strat_str.replace('.', '_')}_{self._role}"
+                print(f"picked {self._strat_str}. ID-ized: {id}")
+                print(f"my id: {self._me}")
+                print(f"it id: {id}\n\n")
+
+                # create a new param set (so that the strategy agent has its own directory)
+                storage_dir = self._parameters.get("storage_dir").replace(self.__class__.__name__, self.strat.__class__.__name__)
+                parameters = Parameters({
+                    "storage_dir": storage_dir
+                })
+                
+
+                # we need to create other settings to pass to the real agent
+                newinfo = Settings(
+                    PartyId(id),        # id
+                    info.getProfile(),  # profile
+                    info.getProtocol(), # protocol
+                    info.getProgress(), # progress
+                    parameters          # parameters
+                )
+
+                # pass the info to the 
+                self.strat.notifyChange(newinfo)
+                
+
             elif isinstance(info, ActionDone):
-                otheract: Action = info.getAction()
-                if isinstance(otheract, Offer):
-                    self._lastReceivedBid = otheract.getBid()
+                self.strat.notifyChange(info)
             elif isinstance(info, YourTurn):
-                self._delayResponse()
-                self._myTurn()
+                
+                tmp = self._connection_data
+                
+                self.strat.notifyChange(info)
+
+                # this check is mostly for the stats, really
+                if self._connection_data == tmp:
+                    print(f"no new connection data :(")
+                    print(f"we still have {tmp}")
+                else:
+                    print(f"new connection data ({self._connection_data}), sending")
+
+
+                # the data is of type geniusweb.actions.Action.Action, more specifically either
+                # Accept, Offer or EndNegotiation. Since there are no reservation utilities in
+                # the domains we study (and no agent seems to use it) the EndNegotiation action
+                # can be ignored. We thus only expect to see either Accepts or Offers, which both
+                # extend geniusweb.actions.ActionWithBid.ActionWithBid and have the following
+                # structure:
+                #
+                #   actor: PartyId,
+                #   bid: Bid
+                #
+                # Since the strategy agent creates the offer it puts its own ID on it (can we avoid
+                # that by passing it our own ID? Why are we passing it its own anyway, seeing as to
+                # how noone is gonna interact with it?) and since we cannot (more accurately, should
+                # not) change the Action object itself, we need to create a new one with our ID on it.
+                # Proper violation of copyrights.
+
+                own_offer = self._connection_data.__class__(self._me, self._connection_data.getBid())
+
+
+                self.getConnection().send(own_offer)
 
             elif isinstance(info, Finished):
                 # The negotiation session has now ended. Get the utility of the deal, store it somewhere and go next.
-                deal: Bid = next(iter(info.getAgreements().getMap().values()))
-                utility = self._utilspace.getUtility(deal)
+                try:
+                    deal: Bid = next(iter(info.getAgreements().getMap().values()))
+                    utility = self._utilspace.getUtility(deal)
+                    self.getReporter().log(logging.INFO, f"Final outcome: bid={deal} giving us a utility of: {utility}")
+                except StopIteration:
+                    self.getReporter().log(logging.INFO, "no agreement reached!")
+                    print("no agreement reached!\n\n")
+                
 
-                self.getReporter().log(logging.INFO, f"Final outcome: bid={deal} giving us a utility of: {utility}")
+                self.strat.notifyChange(info)
                 self.terminate()
                 # stop this party and free resources.
+            else:
+                self.strat.notifyChange(info)
         except Exception as ex:
             self.getReporter().log(logging.CRITICAL, "Failed to handle info", ex)
         self._updateRound(info)
@@ -275,3 +346,21 @@ class TheNegotiator(DefaultParty):
         delay = self._settings.getParameters().getDouble("delay", 0, 0, 10000000)
         if delay > 0:
             sleep(delay * (0.5 + random()))
+
+    def _pick_strategy(self):
+        """Pick a strategy that fits the current domain and profile"""
+
+        features = self._extract_features()
+        print("instantiating...", end=" ")
+        instance = TUCStudentsTimeDependentAgent()
+        print("instantiated!")
+
+        return instance
+
+    def _extract_features(self):
+        """Extract the features that are useful in picking a strategy from the current domain"""
+        pass
+
+    def set_connection_data(self, data):
+        """Setter for the custom connection to use in order to send us the data"""
+        self._connection_data = data
