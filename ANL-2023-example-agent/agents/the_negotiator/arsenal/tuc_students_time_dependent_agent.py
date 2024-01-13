@@ -93,8 +93,7 @@ class TUCStudentsTimeDependentAgent(ConnectionInterceptMixin, DefaultParty):
         self._lastvotes: Votes = None  # type:ignore
         self._settings: Settings = None  # type:ignore
         self.getReporter().log(logging.INFO, "party is initialized")
-        self.getReporter().log(logging.INFO, "im hereee")
-        print(f"yo")
+        print(f"{self.__class__.__name__} initialized!")
 
     # Competition type (do not change this function)
     def getCapabilities(self) -> Capabilities:
@@ -118,14 +117,14 @@ class TUCStudentsTimeDependentAgent(ConnectionInterceptMixin, DefaultParty):
             info (Inform): Contains either a request for action or information.
             See more details at: https://tracinsy.ewi.tudelft.nl/pubtrac/GeniusWeb#Inform
         """
-        print(f"called! with info {info}")
         try:
             # parse Inform object, based on its specified type
             if isinstance(info, Settings):
+                print(f"{self.__class__.__name__} got settings!")
+
                 # Enter setting information. This is called once at the beginning of a session.
                 # You can add your own code based on your own implementation.
                 self._settings = info
-                print(f"TUCagent: set self._settings to {self._settings}")
                 self._me = self._settings.getID()
                 self._progress = self._settings.getProgress()
                 newe = self._settings.getParameters().get("e")
