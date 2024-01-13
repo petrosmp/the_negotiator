@@ -165,44 +165,44 @@ class AgentLearningNN:
         model = tf.keras.Sequential([
             tf.keras.layers.Dense(hidden_layer_size, activation='relu', input_shape=(self._input_features,)),
             tf.keras.layers.Dense(hidden_layer_size, activation='relu'),
-            tf.keras.layers.Dense(self._num_agents, activation='softmax')  # Output layer with one node per agent
+             tf.keras.layers.Dense(self._num_agents, activation='sigmoid')  # Output layer with sigmoid activation to map to value between 0 and 1, one node per agent
         ])
-        # Use some default optimizer (adam) and sparse_categorical_crossentropy loss function with accuracy as a metric
+        # Use some default optimizer (adam) and mean_squared_error loss function
         model.compile(optimizer='adam',
-                      loss='sparse_categorical_crossentropy',
-                      metrics=['accuracy'])
+                      loss='mean_squared_error')
+                      #metrics=['accuracy'])
         return model
 
     # On new data, do a forward pass (and backpropagation)
     # X and y must be converted to numpy for it to work
     # y is the target variable "agent_id"
-    def train_model(self, agent_id, score, domain_data):
-        new_entry = {'agent_id': agent_id, 'score': score, 'domain_data': domain_data}
-        new_entry_df = pd.DataFrame([new_entry])
-        self.data = pd.concat([self.data, new_entry_df], ignore_index=True)
-        # all data except agent_id
-        X = (self.data.drop('agent_id', axis=1)).to_numpy
-        # agent_id is the target, will try to predict it
-        y = (self.data['agent_id']).to_numpy
+    def train_model(self, agent_scores, domain_data):
+        # new_entry = {'agent_scores': agent_scores, 'domain_data': domain_data}
+        # new_entry_df = pd.DataFrame([new_entry])
+        # self.data = pd.concat([self.data, new_entry_df], ignore_index=True)
+        domain_features = np.array([domain_data])
+        X = np.array([domain_features])
+        y = np.array([agent_scores])
+
         # Model training step
         # TODO change epochs
         self.model.fit(X, y, epochs=10)
 
-    # Gets "probabilities" for each agent
+    # Gets predicted scores for each agent
     # This is useful to initialize the UCB algorithm with meaningful data, learned from the utility gained on specific negotiation domains 
-    def predict_probabilities(self, domain_data):
+    def predict_scores(self, domain_data):
         # Tensorflow needs numpy array to work
         features = np.array([domain_data])
         # The neural network can give probabilities for each agent
-        probabilities = self.model.predict_probabilities(features)
-        return probabilities
+        scores_prediction = self.model.predict(features)
+        return scores_prediction
     
     # Unused, for testing purposes
     def predict_agent(self, domain_data):
         # Tensorflow needs numpy array to work
         features = np.array([domain_data])
         #features = {'domain_data': domain_data}
-        probabilities = self.predict_probabilities(features)
+        probabilities = self.model.predict(features)
         return np.argmax(probabilities)
 
 # Usage
@@ -215,5 +215,5 @@ picked_strategy = meta.pick_strategy()
 reward = playStrategy(picked_strategy)
 meta.UCB_round(picked_strategy, reward)
 
-ml = AgentLearningNN(10, 5)
+ml = AgentLearningNN(5, 6, 24)
 
