@@ -46,6 +46,7 @@ from geniusweb.references.Parameters import Parameters
 
 from .arsenal import arsenal
 from .arsenal.tuc_students_time_dependent_agent import TUCStudentsTimeDependentAgent
+from .arsenal.linear_agent import LinearAgent
 
 class TheNegotiator(DefaultParty):
     """Class implementing the negotiator agent."""
@@ -311,7 +312,7 @@ class TheNegotiator(DefaultParty):
 
         features = self._extract_features()
 
-        instance = TUCStudentsTimeDependentAgent()
+        instance = LinearAgent()
 
         return instance
 
