@@ -47,7 +47,6 @@ from pathlib import Path
 import numpy as np
 
 from .arsenal import arsenal
-from .arsenal.agent007 import Agent007
 
 class TheNegotiator(DefaultParty):
     """Class implementing the negotiator agent."""
@@ -115,7 +114,16 @@ class TheNegotiator(DefaultParty):
                 profile_connection.close()            
 
                 # we now have enough data to calculate anything we want. its time to pick a strat.
-                self._strat = self._pick_strategy()
+                
+                # extract features from the domain and get some estimates about agent fitness
+                features = self._extract_features()
+                initial_values = self._magician(features)
+
+                # initialize the UCB machinery with the predictions
+                self._init_UCB(arsenal, initial_values)
+
+                # use UCB to pick the strategy
+                self._strat: DefaultParty = self._UCB_pick_strategy()
 
                 # set ourselves as a proxy for the strategy agent
                 self._strat.set_proxy(self)
@@ -153,16 +161,23 @@ class TheNegotiator(DefaultParty):
                 # The negotiation session has now ended. Get the utility of the deal, store it somewhere and go next.
                 try:
                     deal: Bid = next(iter(info.getAgreements().getMap().values()))
-                    utility = self._profile.getUtility(deal)
+                    utility = float(self._profile.getUtility(deal))
                     self.getReporter().log(logging.INFO, f"Final outcome: bid={deal} giving us a utility of: {utility} (special thanks to {self._strat.__class__.__name__})")
                 except StopIteration:
+                    utility = 0.0     # no reservation values in our profiles
                     self.getReporter().log(logging.INFO, "no agreement reached!")
                     print("no agreement reached!\n\n")
                 
+                # update the UCB estimates based on this pull right here
+                self._UCB_round(self._strat, utility)
 
+                print(f"got reward of {round(utility, 2)}, updated UCB to {[round(x, 2) for x in self._ucb]}")
+
+                # pass the info to the strategy agent so it can terminate gracefully
                 self._strat.notifyChange(info)
-                self.terminate()
+
                 # stop this party and free resources.
+                self.terminate()
         except Exception as ex:
             self.getReporter().log(logging.CRITICAL, "Failed to handle info", ex)
         self._updateRound(info)
@@ -307,15 +322,55 @@ class TheNegotiator(DefaultParty):
         if delay > 0:
             sleep(delay * (0.5 + random()))
 
-    def _pick_strategy(self):
-        """Pick a strategy that fits the current domain and profile"""
+    def _init_UCB(self, arms, initial_values):
+        """
+        Initialize the UCB machinery.
 
-        features = self._extract_features()
+        Sets self._arms and self._ucb to the given parameters and initializes counters
+        and other bookkeeping stuff.
 
-        clas = random_choice(arsenal)
+        Initial values is assumed to be an array of numbers with length equal to the
+        number of arms.
+        """
+
+        """ UCB inits"""
+        k = len(arsenal)
+        self._play_count = np.zeros((k,))             # arm pulls
+        self._total_plays = 0                         # total arm pulls
+        self.estimates = initial_values               # average performance for negotiation round
+        self._ucb = initial_values                    # ucb estimate for each arm
+
+    def _UCB_round(self, picked_strategy, reward):
+        """
+        Update the UCB for the given strategy agent.
+
+        To be used after the end of a negotiation session, when the reward has been
+        received.
+        """
+
+        picked_index = arsenal.index(picked_strategy.__class__)
+
+        self._play_count[picked_index] += 1
+        self._total_plays += 1
+
+        # Update average reward
+        old_estimate = self.estimates[picked_index]
+        new_estimate = (old_estimate * (max(1, self._play_count[picked_index] - 1)) + reward)/max(2, self._play_count[picked_index])
+        self.estimates[picked_index] = new_estimate
+
+        # Update UCB value
+        self._ucb[picked_index] = new_estimate + np.sqrt(2 * np.log(self._total_plays)/self._play_count[picked_index])
+
+        # update estimate
+    def _UCB_pick_strategy(self):
+        """Pick a strategy that fits the current domain and profile according to our UCB's"""
+
+
+        clas = arsenal[np.argmax(self._ucb)]
 
         instance = clas()
 
+        print(f"picked stategy {clas.__name__} because UCB is {[round(x, 2) for x in self._ucb]}")
         return instance
 
     def _extract_features(self):
@@ -351,6 +406,16 @@ class TheNegotiator(DefaultParty):
         feat_dict.update({"bid_util_std_dev": np.std(bid_utils)})
 
         return feat_dict
+
+    def _magician(self, features):
+        """
+        Predict the performance of each agent in the arsenal based
+        on the given set of features.
+        """
+
+        estimates = [random() for _ in arsenal]
+
+        return estimates
 
 
     def set_connection_data(self, data):
