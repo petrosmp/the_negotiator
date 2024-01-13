@@ -1,8 +1,9 @@
 from agents.time_dependent_agent.time_dependent_agent import TimeDependentAgent
 from tudelft_utilities_logging.Reporter import Reporter
+from .connection_intercept_mixin import ConnectionInterceptMixin
 
 
-class HardlinerAgent(TimeDependentAgent):
+class HardlinerAgent(ConnectionInterceptMixin, TimeDependentAgent):
     """
     A simple party that places random bids and accepts when it receives an offer
     with sufficient utility.
