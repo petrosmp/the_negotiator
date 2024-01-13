@@ -164,8 +164,8 @@ class AgentLearningNN:
         # The NN will have as many neurons as number of features and number of neurons as  number of outputs
         model = tf.keras.Sequential([
             tf.keras.layers.Dense(hidden_layer_size, activation='relu', input_shape=(self._input_features,)),
-            tf.keras.layers.Dense(hidden_layer_size, activation='relu'),
-             tf.keras.layers.Dense(self._num_agents, activation='sigmoid')  # Output layer with sigmoid activation to map to value between 0 and 1, one node per agent
+            #tf.keras.layers.Dense(hidden_layer_size, activation='relu'),
+            tf.keras.layers.Dense(self._num_agents, activation='relu')  # Output layer with sigmoid activation to map to value between 0 and 1, one node per agent
         ])
         # Use some default optimizer (adam) and mean_squared_error loss function
         model.compile(optimizer='adam',
@@ -198,9 +198,10 @@ class AgentLearningNN:
     # This is useful to initialize the UCB algorithm with meaningful data, learned from the utility gained on specific negotiation domains 
     def predict_scores(self, domain_data):
         # Tensorflow needs numpy array to work
-        features = np.array([domain_data])
+        feature_values = np.array(list(domain_data.values()))
+        feature_values = feature_values.reshape(1, -1)
         # The neural network can give probabilities for each agent
-        scores_prediction = self.model.predict(features)
+        scores_prediction = self.model.predict(feature_values)
         return scores_prediction
     
     # Unused, for testing purposes
@@ -221,14 +222,14 @@ picked_strategy = meta.pick_strategy()
 reward = playStrategy(picked_strategy)
 meta.UCB_round(picked_strategy, reward)
 
-agent_nn = AgentLearningNN(5, 6, 24)
+agent_nn = AgentLearningNN(5, 6, 5)
 
 
 # Initialize an empty list to store the generated data
 data_samples = []
 
 # Generate 100 random data samples
-for _ in range(100):
+for i in range(10):
     # Generate random key-value pairs for feat_dict
     feat_dict = {
         "num_of_issues": np.random.randint(1, 11),  # Random number of issues (1-10)
@@ -242,9 +243,10 @@ for _ in range(100):
     # Generate agent_scores with Agent 3 having the best score (e.g., 0.9) and Agent 4 having the worst score (e.g., 0.1)
     num_agents = 5
     agent_scores = np.random.uniform(0.1, 0.9, size=num_agents)
-    agent_scores[2] = 0.9  # Set Agent 3's score to the highest value
-    agent_scores[3] = 0.1  # Set Agent 4's score to the lowest value
+    #agent_scores = np.zeros(5)
+    agent_scores[0] = 0.9  # Set Agent 3's score to the highest value
+    agent_scores[3] = 0.0  # Set Agent 4's score to the lowest value
     agent_nn.train_model(agent_scores,feat_dict)
     # Append the generated data as a tuple (feat_dict, agent_scores)
     #data_samples.append((feat_dict, agent_scores))
-agent_nn.predict_scores()
+    print(agent_nn.predict_scores(feat_dict))
