@@ -20,7 +20,7 @@ import random
 import numpy as np
 
 """
-Helper Methods
+    Helper Methods
 """
 
 """
@@ -47,7 +47,9 @@ def find_available_agents(basedir):
 def playStrategy(strategy_id):
     return random.randint(0, 10)
 """
-Meta Agent Class
+    Meta Agent Class
+
+    A meta-agent that will learn to select the best agent for the occasion
 """
 class MetaAgent():
 
@@ -85,181 +87,123 @@ class MetaAgent():
         return picked_strategy
 
 """
-ML class
+    ML class
+    
+    Will help by giving UCB a headstart, using data from negotiations on known domains
+    For each domain, we will get scores for each agent based on the characteristics of the domain,
+    which will be converted into UCB "starting" confidence bounds, passing the batton to UCB which will continue playing different algorithms
 """
-# The goal is to pre-train the UCB algorithm confidence bounds based on prior ML tests
+
 class AgentLearning:
     r_state = 69 # nice
     def __init__(self) :
         # Choosing an ML model
-        self.model = RandomForestClassifier(random_state = self.r_state)
+        self._model = RandomForestClassifier(random_state = self.r_state)
         # TODO
         self.data = pd.DataFrame()
 
-    def add_data(self, agent_id, domain_data, score, other_domain_features):
+    def add_data(self, agent_id, domain_data, score):
         """ Add new data to the dataset, replicating entries based on score. """
-        # TODO implement domain data
-        new_entry = {'agent_id': agent_id, 'domain_data': domain_data}
-        new_entry.update(other_domain_features)
+        # TODO implement domain feature extraction
+        new_entry = {'agent_id': agent_id, 'score': score, 'domain_data': domain_data}
         new_entry_df = pd.DataFrame([new_entry])
 
         # Replicate the entry based on the score
-        replication_factor = self.calculate_replication_factor(score)
+        replication_factor = self._calculate_replication_factor(score)
         replicated_data = pd.concat([new_entry_df] * replication_factor, ignore_index=True)
         self.data = pd.concat([self.data, replicated_data], ignore_index=True)
     
     # Give more weight to good scores by replicating the data entered in the dataset
-    def calculate_replication_factor(score):
-        return 5 if score > 0.9 else 4 if score > 0.85 else 2 if score > 0.75 else 1
+    @staticmethod
+    def _calculate_replication_factor(score):
+        #return 5 if score > 0.9 else 4 if score > 0.85 else 2 if score > 0.75 else 1
+        return 2 if score > 0.95 else 1
 
+    # When the dataset is "complete" perform training
     def train_model(self):
         # all data except agent_id
         X = self.data.drop('agent_id', axis=1)
         # agent_id is the target, will try to predict it
         y = self.data['agent_id']
         # Model training step
-        self.model.fit(X, y)
+        self._model.fit(X, y)
 
-    def predict(self, domain_data, other_domain_features):
+    # Gets "probabilities" for each agent
+    # This is useful to initialize the UCB algorithm with meaningful data, learned from the utility gained on specific negotiation domains 
+    def predict_probabilities(self, domain_data):
         features = {'domain_data': domain_data}
-        #features.update(other_domain_features)
         features_df = pd.DataFrame([features])
-        return self.model.predict(features_df)
+        # The random forest algorithm can give probabilities for each agent
+        probabilities = self._model.predict_proba(features_df)
+        return probabilities
     
-    # Give an estimate for each player based on the domain data? No
-    # We must make simpler training *Unrelated* to domains to see if the agent is the best
-    def cookPriors(self):
-        self.model
-        pass
+    # Unused, for testing purposes
+    def predict_agent(self, domain_data):
+        #TODO test features
+        features = {'domain_data': domain_data}
+        features_df = pd.DataFrame([features])
+        return self._model.predict(features_df)
+
+"""
+Alternative NN approach
+"""
+import tensorflow as tf
+
+# TODO prepare domain_data to enter the NN
+class AgentLearningNN:
+    r_state = 69 # nice
+    def __init__(self, num_agents, input_features, hidden_layer_size=64) :
+        self._num_agents = num_agents  # Number of agents determines the output layer size
+        self._input_features = input_features  # Number of input features
+        # Choosing an ML model
+        self.model = self._setupNeuralNetwork(hidden_layer_size)
+        # TODO check
+        #self.data = pd.DataFrame()
+
+    def _setupNeuralNetwork(self, hidden_layer_size):
+        # The NN will have as many neurons as number of features and number of neurons as  number of outputs
+        model = tf.keras.Sequential([
+            tf.keras.layers.Dense(hidden_layer_size, activation='relu', input_shape=(self._input_features,)),
+            tf.keras.layers.Dense(hidden_layer_size, activation='relu'),
+            tf.keras.layers.Dense(self._num_agents, activation='softmax')  # Output layer with one node per agent
+        ])
+        # Use some default optimizer (adam) and sparse_categorical_crossentropy loss function with accuracy as a metric
+        model.compile(optimizer='adam',
+                      loss='sparse_categorical_crossentropy',
+                      metrics=['accuracy'])
+        return model
+
+    # On new data, do a forward pass (and backpropagation)
+    # X and y must be converted to numpy for it to work
+    # y is the target variable "agent_id"
+    def train_model(self, agent_id, score, domain_data):
+        new_entry = {'agent_id': agent_id, 'score': score, 'domain_data': domain_data}
+        new_entry_df = pd.DataFrame([new_entry])
+        self.data = pd.concat([self.data, new_entry_df], ignore_index=True)
+        # all data except agent_id
+        X = (self.data.drop('agent_id', axis=1)).to_numpy
+        # agent_id is the target, will try to predict it
+        y = (self.data['agent_id']).to_numpy
+        # Model training step
+        # TODO change epochs
+        self.model.fit(X, y, epochs=10)
+
+    # Gets "probabilities" for each agent
+    # This is useful to initialize the UCB algorithm with meaningful data, learned from the utility gained on specific negotiation domains 
+    def predict_probabilities(self, domain_data):
+        # Tensorflow needs numpy array to work
+        features = np.array([domain_data])
+        # The neural network can give probabilities for each agent
+        probabilities = self.model.predict_probabilities(features)
+        return probabilities
     
-    """
-    A meta-agent that will learn to select the best agent for the occasion
-    """ 
-
-    """
-    From template/ time dependent agent
-    """
-
-    # def __init__(self, reporter: Reporter = None):
-    #     super().__init__(reporter)
-    #     self._profileint: ProfileInterface = None  # type:ignore
-    #     self._utilspace: LinearAdditive = None  # type:ignore
-    #     self._me: PartyId = None  # type:ignore
-    #     self._progress: Progress = None  # type:ignore
-    #     self._lastReceivedBid: Bid = None  # type:ignore
-    #     self._extendedspace: ExtendedUtilSpace = None  # type:ignore
-    #     self._e: float = 1.2
-    #     self._lastvotes: Votes = None  # type:ignore
-    #     self._settings: Settings = None  # type:ignore
-    #     self.getReporter().log(logging.INFO, "party is initialized")
-
-    # # Override
-    # def getCapabilities(self) -> Capabilities:
-    #     return Capabilities(
-    #         set(["SAOP", "Learn", "MOPAC"]),
-    #         set(["geniusweb.profile.utilityspace.LinearAdditive"]),
-    #     )
-
-    # #TODO learning
-    # def predict_best_agent(settings):
-    #     # Extract features from settings
-    #     features = extractFeatures(settings)
-        
-    #     # Reshape data for prediction (assuming features is a dictionary)
-    #     # features_df = pd.DataFrame([features])
-        
-    #     # Predict the best agent
-    #     # best_agent_id = model.predict(features_df)[0]
-    #     # return best_agent_id
-
-    # # Parse the settings dictionary
-    # def extractFeatures(settings):
-    #     return {
-    #         '': settings[""],
-    #         '': settings[""],
-    #     }
-
-    # # Override
-    # def getDescription(self) -> str:
-    #     return (
-    #         ""
-    #     )
-
-    # def notifyChange(self, data: Inform):
-    #         """MUST BE IMPLEMENTED
-    #         This is the entry point of all interaction with your agent after is has been initialised.
-    #         How to handle the received data is based on its class type.
-
-    #         Args:
-    #             info (Inform): Contains either a request for action or information.
-    #         """
-
-    #         ############ a Settings message is the first message that will be send to your #############
-    #         # agent containing all the information about the negotiation session.
-    #         if isinstance(data, Settings):
-    #             ################
-    #             agents = settings["agents"]
-    #             profiles = settings["profiles"]
-    #             deadline_time_ms = settings["deadline_time_ms"]
-    #             ################
-    #             self.settings = cast(Settings, data)
-    #             self.me = self.settings.getID()
-
-    #             # progress towards the deadline has to be tracked manually through the use of the Progress object
-    #             self.progress = self.settings.getProgress()
-
-    #             self.parameters = self.settings.getParameters()
-    #             self.storage_dir = self.parameters.get("storage_dir")
-
-    #             # the profile contains the preferences of the agent over the domain
-    #             profile_connection = ProfileConnectionFactory.create(
-    #                 data.getProfile().getURI(), self.getReporter()
-    #             )
-    #             self.profile = profile_connection.getProfile()
-    #             self.domain = self.profile.getDomain()
-    #             profile_connection.close()
-
-    #         # ActionDone informs you of an action (an offer or an accept)
-    #         # that is performed by one of the agents (including yourself).
-    #         elif isinstance(data, ActionDone):
-    #             action = cast(ActionDone, data).getAction()
-    #             actor = action.getActor()
-
-    #             # ignore action if it is our action
-    #             if actor != self.me:
-    #                 # obtain the name of the opponent, cutting of the position ID.
-    #                 self.other = str(actor).rsplit("_", 1)[0]
-
-    #                 # process action done by opponent
-    #                 self.opponent_action(action)
-    #         # YourTurn notifies you that it is your turn to act
-    #         elif isinstance(data, YourTurn):
-    #             # execute a turn
-    #             self.my_turn()
-
-    #         # Finished will be send if the negotiation has ended (through agreement or deadline)
-    #         elif isinstance(data, Finished):
-    #             self.save_data()
-    #             # terminate the agent MUST BE CALLED
-    #             self.logger.log(logging.INFO, "party is terminating:")
-    #             super().terminate()
-    #         else:
-    #             self.logger.log(logging.WARNING, "Ignoring unknown info " + str(data))
-    # """
-    # Testing
-    # """
-    # #TODO gpt sample data
-    # data = {
-    #     'agent_id': ['agent1', 'agent2', 'agent1', 'agent3'],
-    #     # TODO performance metric check
-    #     'performance_metric': [0.8, 0.75, 0.85, 0.78],
-    #     # 'domain_feature1': [1, 2, 1, 2],
-    #     # 'domain_feature2': [3, 4, 3, 4],
-    # }
-    # df = pd.DataFrame(data)
-    # # TODO read and store data
-    # df.to_csv('agent_performance_data.csv', index=False)
-    # loaded_df = pd.read_csv('agent_performance_data.csv')
+    # Unused, for testing purposes
+    def predict_agent(self, domain_data):
+        # Tensorflow needs numpy array to work
+        features = np.array([domain_data])
+        #features = {'domain_data': domain_data}
+        probabilities = self.predict_probabilities(features)
+        return np.argmax(probabilities)
 
 # Usage
 # print("Current Working Directory:", os.getcwd())
@@ -270,3 +214,6 @@ meta = MetaAgent()
 picked_strategy = meta.pick_strategy()
 reward = playStrategy(picked_strategy)
 meta.UCB_round(picked_strategy, reward)
+
+ml = AgentLearningNN(10, 5)
+
