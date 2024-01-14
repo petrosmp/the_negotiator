@@ -28,7 +28,7 @@ def extract_features(profile:LinearAdditiveUtilitySpace):
         feat_dict.update({"num_of_bids": all_bids.size()})
 
         # 4) standard deviation of weights
-        feat_dict.update({"weight_std_dev": np.std(list(weights.values()))})
+        feat_dict.update({"weight_std_dev": float(np.std(list(weights.values())))})
 
         # 5) average bid utility
         bid_utils = []
