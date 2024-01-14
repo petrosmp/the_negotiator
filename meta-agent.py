@@ -155,23 +155,40 @@ class AgentLearningNN:
     def __init__(self, num_agents, input_features, hidden_layer_size=64) :
         self._num_agents = num_agents  # Number of agents determines the output layer size
         self._input_features = input_features  # Number of input features
+        self._model = None
         # Choosing an ML model
-        self.model = self._setupNeuralNetwork(hidden_layer_size)
+        self._setupNeuralNetwork(hidden_layer_size)
         # TODO check
         #self.data = pd.DataFrame()
 
     def _setupNeuralNetwork(self, hidden_layer_size):
         # The NN will have as many neurons as number of features and number of neurons as  number of outputs
-        model = tf.keras.Sequential([
+        self._model = tf.keras.Sequential([
             tf.keras.layers.Dense(hidden_layer_size, activation='relu', input_shape=(self._input_features,)),
-            #tf.keras.layers.Dense(hidden_layer_size, activation='relu'),
-            tf.keras.layers.Dense(self._num_agents, activation='relu')  # Output layer with sigmoid activation to map to value between 0 and 1, one node per agent
+            tf.keras.layers.Dense(hidden_layer_size, activation='relu'),
+            tf.keras.layers.Dropout(0.3),
+            tf.keras.layers.Dense(self._num_agents, activation='softmax')  # Output layer with sigmoid activation to map to value between 0 and 1, one node per agent
         ])
         # Use some default optimizer (adam) and mean_squared_error loss function
-        model.compile(optimizer='adam',
+        # Also tested SGD
+        self._model.compile(optimizer='adam',
                       loss='mean_squared_error')
                       #metrics=['accuracy'])
-        return model
+
+    
+    def saveNN(self):
+        script_dir = os.path.dirname(os.path.realpath(__file__))  # Directory of the script
+        model_dir = os.path.join(script_dir, 'model')  
+        os.makedirs(model_dir, exist_ok=True) 
+        file_path = os.path.join(model_dir, "AgentNN")
+        self._model.save(file_path)
+  
+    def loadNN(self):
+        script_dir = os.path.dirname(os.path.realpath(__file__))  # Directory of the script
+        model_dir = os.path.join(script_dir, 'model')  
+        file_path = os.path.join(model_dir, "AgentNN")
+        self._model = tf.keras.models.load_model(file_path)
+        print(f"Model loaded from {file_path}")
 
     # On new data, do a forward pass (and backpropagation)
     # X and y must be converted to numpy for it to work
@@ -192,7 +209,8 @@ class AgentLearningNN:
         print("y:", y.shape)
         # Model training step
         # TODO change epochs
-        self.model.fit(X, y, epochs=10)
+        #self.model.fit(X, y, epochs=10)
+        self._model.fit(X, y)
 
     # Gets predicted scores for each agent
     # This is useful to initialize the UCB algorithm with meaningful data, learned from the utility gained on specific negotiation domains 
@@ -201,7 +219,7 @@ class AgentLearningNN:
         feature_values = np.array(list(domain_data.values()))
         feature_values = feature_values.reshape(1, -1)
         # The neural network can give probabilities for each agent
-        scores_prediction = self.model.predict(feature_values)
+        scores_prediction = self._model.predict(feature_values)
         return scores_prediction
     
     # Unused, for testing purposes
@@ -222,31 +240,32 @@ picked_strategy = meta.pick_strategy()
 reward = playStrategy(picked_strategy)
 meta.UCB_round(picked_strategy, reward)
 
-agent_nn = AgentLearningNN(5, 6, 5)
+agent_nn = AgentLearningNN(5, 4, 5)
 
 
 # Initialize an empty list to store the generated data
 data_samples = []
-
+agent_nn.loadNN()
 # Generate 100 random data samples
 for i in range(10):
     # Generate random key-value pairs for feat_dict
     feat_dict = {
         "num_of_issues": np.random.randint(1, 11),  # Random number of issues (1-10)
-        "avg_vals_per_issue": np.random.uniform(0.5, 5.0),  # Random average values per issue (0.5-5.0)
         "num_of_bids": np.random.randint(100, 1000),  # Random number of possible bids (100-1000)
-        "weight_std_dev": np.random.uniform(0.1, 1.0),  # Random weight standard deviation (0.1-1.0)
+        "avg_vals_per_issue": np.random.uniform(0.5, 5.0),  # Random average values per issue (0.5-5.0)
+        #"weight_std_dev": np.random.uniform(0.1, 1.0),  # Random weight standard deviation (0.1-1.0)
         "avg_bid_util": np.random.uniform(0.2, 0.8),  # Random average bid utility (0.2-0.8)
-        "bid_util_std_dev": np.random.uniform(0.05, 0.2)  # Random bid utility standard deviation (0.05-0.2)
+        #"bid_util_std_dev": np.random.uniform(0.05, 0.2)  # Random bid utility standard deviation (0.05-0.2)
     }
 
     # Generate agent_scores with Agent 3 having the best score (e.g., 0.9) and Agent 4 having the worst score (e.g., 0.1)
     num_agents = 5
     agent_scores = np.random.uniform(0.1, 0.9, size=num_agents)
-    #agent_scores = np.zeros(5)
+    agent_scores = np.zeros(5)
     agent_scores[0] = 0.9  # Set Agent 3's score to the highest value
-    agent_scores[3] = 0.0  # Set Agent 4's score to the lowest value
+    agent_scores[3] = 0.3  # Set Agent 4's score to the lowest value
     agent_nn.train_model(agent_scores,feat_dict)
     # Append the generated data as a tuple (feat_dict, agent_scores)
     #data_samples.append((feat_dict, agent_scores))
     print(agent_nn.predict_scores(feat_dict))
+#agent_nn.saveNN()
