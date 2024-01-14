@@ -143,7 +143,6 @@ class TheNegotiator(DefaultParty):
                 # This is where we first see the domain, and thus where we extract the features
                 # and select the agent that we will play as.
 
-                print(f"\n\n\n{self.__class__.__name__} got settings!")
                 self._settings = info
 
                 # unpack the settings and store them as class variables for future reference
@@ -465,14 +464,9 @@ class TheNegotiator(DefaultParty):
         Predict the performance of each agent in the arsenal based
         on the given set of features.
         """
-        numOfAgents = 5
-        hiddenLayerSize = 5
-        domainFeatureNum = 4
-        nn = magicianNN(numOfAgents, domainFeatureNum, hiddenLayerSize)
-        # TODO check if storage dir is initialized
-        nn.loadNN(self._storage_dir)
+        estimates = [random() for _ in arsenal]
 
-        return nn.predict_scores(features)
+        return estimates
 
 
     def set_connection_data(self, data):
