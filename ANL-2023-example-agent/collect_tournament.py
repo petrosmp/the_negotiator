@@ -54,10 +54,6 @@ tournament_settings = {
             "parameters": {"storage_dir": "agent_storage/opponents/AgentFish"},
         },
         {
-            "class": "agents.ANL2022.BIU_agent.BIU_agent.BIU_agent",
-            "parameters": {"storage_dir": "agent_storage/opponents/BIU_agent"},
-        },
-        {
             "class": "agents.ANL2022.charging_boul.charging_boul.ChargingBoul",
             "parameters": {"storage_dir": "agent_storage/opponents/ChargingBoul"},
         },
