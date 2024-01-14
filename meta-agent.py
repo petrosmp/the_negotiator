@@ -240,10 +240,16 @@ picked_strategy = meta.pick_strategy()
 reward = playStrategy(picked_strategy)
 meta.UCB_round(picked_strategy, reward)
 
-agent_nn = AgentLearningNN(5, 4, 5)
+# Neural Network parameters setup and model initialization
+numOfAgents = 5
+hiddenLayerSize = 5
+domainFeatureNum = 4
+agent_nn = AgentLearningNN(numOfAgents, domainFeatureNum, hiddenLayerSize)
 
+"""
+ A testing suite
+"""
 
-# Initialize an empty list to store the generated data
 data_samples = []
 agent_nn.loadNN()
 # Generate 100 random data samples
