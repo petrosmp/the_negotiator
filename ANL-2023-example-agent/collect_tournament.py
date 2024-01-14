@@ -6,6 +6,7 @@ import time
 from utils.custom_runners import run_tournament
 from utils.aggregate_results import aggregate_results
 import numpy as np
+from datetime import datetime as dt
 
 RESULTS_DIR = Path("results", time.strftime('%Y%m%d-%H%M%S'))
 
@@ -57,55 +58,52 @@ tournament_settings = {
             "class": "agents.ANL2022.charging_boul.charging_boul.ChargingBoul",
             "parameters": {"storage_dir": "agent_storage/opponents/ChargingBoul"},
         },
-        # {
-        #     "class": "agents.ANL2022.learning_agent.learning_agent.LearningAgent",
-        #     "parameters": {"storage_dir": "agent_storage/opponents/LearningAgent"},
-        # },
-        # {
-        #     "class": "agents.ANL2022.compromising_agent.compromising_agent.CompromisingAgent",
-        #     "parameters": {"storage_dir": "agent_storage/opponents/CompromisingAgent"},
-        # },
-        # {
-        #     "class": "agents.ANL2022.dreamteam109_agent.dreamteam109_agent.DreamTeam109Agent",
-        #     "parameters": {"storage_dir": "agent_storage/opponents/DreamTeam109Agent"},
-        # },
-        # {
-        #     "class": "agents.ANL2022.gea_agent.gea_agent.GEAAgent",
-        #     "parameters": {"storage_dir": "agent_storage/opponents/GEAAgent"},
-        # },
-        # {
-        #     "class": "agents.ANL2022.LuckyAgent2022.LuckyAgent2022.LuckyAgent2022",
-        #     "parameters": {"storage_dir": "agent_storage/opponents/LuckyAgent2022"},
-        # },
-        # {
-        #     "class": "agents.ANL2022.Pinar_Agent.Pinar_Agent.Pinar_Agent",
-        #     "parameters": {"storage_dir": "agent_storage/opponents/Pinar_Agent"},
-        # }
+        {
+            "class": "agents.ANL2022.learning_agent.learning_agent.LearningAgent",
+            "parameters": {"storage_dir": "agent_storage/opponents/LearningAgent"},
+        },
+        {
+            "class": "agents.ANL2022.compromising_agent.compromising_agent.CompromisingAgent",
+            "parameters": {"storage_dir": "agent_storage/opponents/CompromisingAgent"},
+        },
+        {
+            "class": "agents.ANL2022.dreamteam109_agent.dreamteam109_agent.DreamTeam109Agent",
+            "parameters": {"storage_dir": "agent_storage/opponents/DreamTeam109Agent"},
+        },
+        {
+            "class": "agents.ANL2022.gea_agent.gea_agent.GEAAgent",
+            "parameters": {"storage_dir": "agent_storage/opponents/GEAAgent"},
+        },
+        {
+            "class": "agents.ANL2022.LuckyAgent2022.LuckyAgent2022.LuckyAgent2022",
+            "parameters": {"storage_dir": "agent_storage/opponents/LuckyAgent2022"},
+        },
+        {
+            "class": "agents.ANL2022.Pinar_Agent.Pinar_Agent.Pinar_Agent",
+            "parameters": {"storage_dir": "agent_storage/opponents/Pinar_Agent"},
+        }
     ],
     "profile_sets": [
         ["domains/domain00/profileA.json", "domains/domain00/profileB.json"],
-        # ["domains/domain02/profileA.json", "domains/domain02/profileB.json"],
-        # ["domains/domain03/profileA.json", "domains/domain03/profileB.json"],
-        # ["domains/domain04/profileA.json", "domains/domain04/profileB.json"],
-        # ["domains/domain05/profileA.json", "domains/domain05/profileB.json"],
-        # ["domains/domain06/profileA.json", "domains/domain06/profileB.json"],
-        # ["domains/domain07/profileA.json", "domains/domain07/profileB.json"],
-        # ["domains/domain08/profileA.json", "domains/domain08/profileB.json"],
-        # ["domains/domain08/profileA.json", "domains/domain08/profileB.json"],
-        # ["domains/domain09/profileA.json", "domains/domain09/profileB.json"],
-        # ["domains/domain10/profileA.json", "domains/domain10/profileB.json"],
-        # ["domains/domain12/profileA.json", "domains/domain12/profileB.json"],
-        # ["domains/domain13/profileA.json", "domains/domain13/profileB.json"],
-        # ["domains/domain15/profileA.json", "domains/domain15/profileB.json"],
+        ["domains/domain02/profileA.json", "domains/domain02/profileB.json"],
+        ["domains/domain03/profileA.json", "domains/domain03/profileB.json"],
+        ["domains/domain04/profileA.json", "domains/domain04/profileB.json"],
+        ["domains/domain05/profileA.json", "domains/domain05/profileB.json"],
+        ["domains/domain06/profileA.json", "domains/domain06/profileB.json"],
+        ["domains/domain07/profileA.json", "domains/domain07/profileB.json"],
     ],
     "deadline_time_ms": 10000,
 }
 
+start_time = dt.now()
+
 # run a session and obtain results in dictionaries
 tournament_steps, tournament_results, tournament_results_summary, util_results = run_tournament(tournament_settings, False)
 
+end_time = dt.now()
+filename = f"dataset_tournament_kalo_{time.strftime('%Y%m%d-%H_%M_%S')}.py"
+print(f"the creation of {filename} took {str(end_time-start_time)}")
 
-filename = f"dataset_tournament_{time.strftime('%Y%m%d-%H_%M_%S')}.py"
 with open(filename, 'w') as f:
 
     f.write(f'results = [\n')
