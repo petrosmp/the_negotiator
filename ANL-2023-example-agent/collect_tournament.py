@@ -43,48 +43,47 @@ tournament_settings = {
     "opponents": [
         {
             "class": "agents.ANL2022.agent007.agent007.Agent007",
-            "parameters": {"storage_dir": "agent_storage/Agent007"},
+            "parameters": {"storage_dir": "agent_storage/opponents/Agent007"},
         },
         {
             "class": "agents.ANL2022.agent4410.agent_4410.Agent4410",
-            "parameters": {"storage_dir": "agent_storage/Agent4410"},
+            "parameters": {"storage_dir": "agent_storage/opponents/Agent4410"},
         },
         {
             "class": "agents.ANL2022.agentfish.agentfish.AgentFish",
-            "parameters": {"storage_dir": "agent_storage/AgentFish"},
+            "parameters": {"storage_dir": "agent_storage/opponents/AgentFish"},
+        },
+        {
+            "class": "agents.ANL2022.BIU_agent.BIU_agent.BIU_agent",
+            "parameters": {"storage_dir": "agent_storage/opponents/BIU_agent"},
+        },
+        {
+            "class": "agents.ANL2022.charging_boul.charging_boul.ChargingBoul",
+            "parameters": {"storage_dir": "agent_storage/opponents/ChargingBoul"},
         },
         # {
-        #     "class": "agents.ANL2022.BIU_agent.BIU_agent.BIU_agent",
-        #     "parameters": {"storage_dir": "agent_storage/BIU_agent"},
-        # },
-        # {
-        #     "class": "agents.ANL2022.charging_boul.charging_boul.ChargingBoul",
-        #     "parameters": {"storage_dir": "agent_storage/ChargingBoul"},
-        # },
-        # xwrisma
-        # {
         #     "class": "agents.ANL2022.learning_agent.learning_agent.LearningAgent",
-        #     "parameters": {"storage_dir": "agent_storage/LearningAgent"},
+        #     "parameters": {"storage_dir": "agent_storage/opponents/LearningAgent"},
         # },
         # {
         #     "class": "agents.ANL2022.compromising_agent.compromising_agent.CompromisingAgent",
-        #     "parameters": {"storage_dir": "agent_storage/CompromisingAgent"},
+        #     "parameters": {"storage_dir": "agent_storage/opponents/CompromisingAgent"},
         # },
         # {
         #     "class": "agents.ANL2022.dreamteam109_agent.dreamteam109_agent.DreamTeam109Agent",
-        #     "parameters": {"storage_dir": "agent_storage/DreamTeam109Agent"},
+        #     "parameters": {"storage_dir": "agent_storage/opponents/DreamTeam109Agent"},
         # },
         # {
         #     "class": "agents.ANL2022.gea_agent.gea_agent.GEAAgent",
-        #     "parameters": {"storage_dir": "agent_storage/GEAAgent"},
+        #     "parameters": {"storage_dir": "agent_storage/opponents/GEAAgent"},
         # },
         # {
         #     "class": "agents.ANL2022.LuckyAgent2022.LuckyAgent2022.LuckyAgent2022",
-        #     "parameters": {"storage_dir": "agent_storage/LuckyAgent2022"},
+        #     "parameters": {"storage_dir": "agent_storage/opponents/LuckyAgent2022"},
         # },
         # {
         #     "class": "agents.ANL2022.Pinar_Agent.Pinar_Agent.Pinar_Agent",
-        #     "parameters": {"storage_dir": "agent_storage/Pinar_Agent"},
+        #     "parameters": {"storage_dir": "agent_storage/opponents/Pinar_Agent"},
         # }
     ],
     "profile_sets": [
