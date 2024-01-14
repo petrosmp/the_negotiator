@@ -25,6 +25,7 @@ from geniusweb.simplerunner.ClassPathConnectionFactory import ClassPathConnectio
 from geniusweb.protocol.session.SessionResult import SessionResult
 from pyson.ObjectMapper import ObjectMapper
 from geniusweb.profile.utilityspace.LinearAdditiveUtilitySpace import LinearAdditiveUtilitySpace
+from .extract_features import extract_features
 
 class Runner:
 	'''
@@ -115,29 +116,26 @@ class Runner:
 		# get the result of the negotiation session
 		result: SessionResult = next(iter(self._protocol.getState().getResults()))
 
-		# get the agents that participated in the negotiation and the profile each participated as
-		participants = []
+		# find out the profile of 
 		care_about = None
 		for agent, profile in result.getParticipants().items():
-			participants.append({
-				"agent": agent.getName()[:-2].split('_')[-1],		# trim the _x at the end (that indicated the profile) and keep the part after the last '_'
-				"profile": profile.getProfile().getURI().getPath()
-			})
+			if agent.getName()[:-2].split('_')[-1] == self._care_about:
+				care_about = {
+					"agent": agent.getName()[:-2].split('_')[-1],		# trim the _x at the end (that indicated the profile) and keep the part after the last '_'
+					"profile": profile.getProfile().getURI().getPath()
+				}
 
-			# keep a reference to the agent that we care about (we dont really need the participants list, its here for debugging pruposes, it will be gone next commit)
-			if participants[-1]["agent"] == self._care_about:
-				care_about = participants[-1]
 
 		# get the agreement at which the agents arived
 		agreement = None
-		utility = 0
 		try:
 			agreement = next(iter(result.getAgreements().getMap().values()))
 		except StopIteration:
 			pass
-			# no agreement reached, 0 util for all
 
 		# if there was an agreement find out the utility gained by the agent we care about
+		utility = 0
+		features = None
 		if agreement:
 		
 			# check that we found the agent we care about
@@ -149,13 +147,17 @@ class Runner:
 					profile_data = json.load(f)
 				profile: LinearAdditiveUtilitySpace = ObjectMapper().parse(profile_data, LinearAdditiveUtilitySpace)
 				utility = profile.getUtility(agreement)
+
+				# since we have the profile here, extract some features real quick
+				features = extract_features(profile)
 		
 		# set the result class variable so we can return it
 		self._result = {
+			"features": features,
 			"agent": self._care_about,
 			"utility": float(utility)
 		}
-
+		
 		self._properlyStopped = True
 
 	def _logFinal(self, level:int , state: NegoState):
