@@ -154,6 +154,7 @@ class Runner:
 			profile_file = care_about["profile"]
 			with open(profile_file) as f:
 				profile_data = json.load(f)
+			profile: LinearAdditiveUtilitySpace = ObjectMapper().parse(profile_data, LinearAdditiveUtilitySpace)
 			features = extract_features(profile)
 
 

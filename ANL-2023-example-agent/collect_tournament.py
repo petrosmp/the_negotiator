@@ -20,26 +20,88 @@ if not RESULTS_DIR.exists():
 tournament_settings = {
     "agents": [
         {
+            "class": "agents.ANL2022.agent007.agent007.Agent007",
+            "parameters": {"storage_dir": "agent_storage/Agent007"},
+        },
+        {
+            "class": "agents.ANL2022.dreamteam109_agent.dreamteam109_agent.DreamTeam109Agent",
+            "parameters": {"storage_dir": "agent_storage/DreamTeam109Agent"},
+        },
+        {
             "class": "agents.template_agent.template_agent.TemplateAgent",
             "parameters": {"storage_dir": "agent_storage/TemplateAgent"},
         },
         {
-            "class": "agents.the_negotiator.the_negotiator.TheNegotiator",
-            "parameters": {"storage_dir": "agent_storage/TheNegotiator"},
+            "class": "agents.ANL2022.gea_agent.gea_agent.GEAAgent",
+            "parameters": {"storage_dir": "agent_storage/GEAAgent"},
+        },
+        {
+            "class": "agents.CSE3210.agent33.agent33.Agent33",
+            "parameters": {"storage_dir": "agent_storage/Agent33"},
         },
     ],
     "opponents": [
-
         {
-            "class": "agents.boulware_agent.boulware_agent.BoulwareAgent",
+            "class": "agents.ANL2022.agent007.agent007.Agent007",
+            "parameters": {"storage_dir": "agent_storage/Agent007"},
         },
         {
-            "class": "agents.conceder_agent.conceder_agent.ConcederAgent",
+            "class": "agents.ANL2022.agent4410.agent_4410.Agent4410",
+            "parameters": {"storage_dir": "agent_storage/Agent4410"},
         },
+        {
+            "class": "agents.ANL2022.agentfish.agentfish.AgentFish",
+            "parameters": {"storage_dir": "agent_storage/AgentFish"},
+        },
+        # {
+        #     "class": "agents.ANL2022.BIU_agent.BIU_agent.BIU_agent",
+        #     "parameters": {"storage_dir": "agent_storage/BIU_agent"},
+        # },
+        # {
+        #     "class": "agents.ANL2022.charging_boul.charging_boul.ChargingBoul",
+        #     "parameters": {"storage_dir": "agent_storage/ChargingBoul"},
+        # },
+        # xwrisma
+        # {
+        #     "class": "agents.ANL2022.learning_agent.learning_agent.LearningAgent",
+        #     "parameters": {"storage_dir": "agent_storage/LearningAgent"},
+        # },
+        # {
+        #     "class": "agents.ANL2022.compromising_agent.compromising_agent.CompromisingAgent",
+        #     "parameters": {"storage_dir": "agent_storage/CompromisingAgent"},
+        # },
+        # {
+        #     "class": "agents.ANL2022.dreamteam109_agent.dreamteam109_agent.DreamTeam109Agent",
+        #     "parameters": {"storage_dir": "agent_storage/DreamTeam109Agent"},
+        # },
+        # {
+        #     "class": "agents.ANL2022.gea_agent.gea_agent.GEAAgent",
+        #     "parameters": {"storage_dir": "agent_storage/GEAAgent"},
+        # },
+        # {
+        #     "class": "agents.ANL2022.LuckyAgent2022.LuckyAgent2022.LuckyAgent2022",
+        #     "parameters": {"storage_dir": "agent_storage/LuckyAgent2022"},
+        # },
+        # {
+        #     "class": "agents.ANL2022.Pinar_Agent.Pinar_Agent.Pinar_Agent",
+        #     "parameters": {"storage_dir": "agent_storage/Pinar_Agent"},
+        # }
     ],
     "profile_sets": [
         ["domains/domain00/profileA.json", "domains/domain00/profileB.json"],
-        ["domains/domain01/profileA.json", "domains/domain01/profileB.json"],
+        # ["domains/domain02/profileA.json", "domains/domain02/profileB.json"],
+        # ["domains/domain03/profileA.json", "domains/domain03/profileB.json"],
+        # ["domains/domain04/profileA.json", "domains/domain04/profileB.json"],
+        # ["domains/domain05/profileA.json", "domains/domain05/profileB.json"],
+        # ["domains/domain06/profileA.json", "domains/domain06/profileB.json"],
+        # ["domains/domain07/profileA.json", "domains/domain07/profileB.json"],
+        # ["domains/domain08/profileA.json", "domains/domain08/profileB.json"],
+        # ["domains/domain08/profileA.json", "domains/domain08/profileB.json"],
+        # ["domains/domain09/profileA.json", "domains/domain09/profileB.json"],
+        # ["domains/domain10/profileA.json", "domains/domain10/profileB.json"],
+        # ["domains/domain12/profileA.json", "domains/domain12/profileB.json"],
+        # ["domains/domain13/profileA.json", "domains/domain13/profileB.json"],
+        # ["domains/domain15/profileA.json", "domains/domain15/profileB.json"],
     ],
     "deadline_time_ms": 10000,
 }
