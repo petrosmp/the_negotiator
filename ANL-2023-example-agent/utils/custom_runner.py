@@ -150,7 +150,13 @@ class Runner:
 
 				# since we have the profile here, extract some features real quick
 				features = extract_features(profile)
-		
+		else:	# we also need to extract features when no agreement
+			profile_file = care_about["profile"]
+			with open(profile_file) as f:
+				profile_data = json.load(f)
+			features = extract_features(profile)
+
+
 		# set the result class variable so we can return it
 		self._result = {
 			"features": features,
