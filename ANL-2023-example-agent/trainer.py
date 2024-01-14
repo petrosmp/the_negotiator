@@ -86,10 +86,20 @@ class magicianNN:
     # X and y must be converted to numpy for it to work
     # y is the target variable "agent_id"
     def train_model(self, agent_scores, domain_data):
-        
+
         # Selected keys/features from the dictionary
         keys = ["num_of_issues", "num_of_bids",  "avg_vals_per_issue", "avg_bid_util"]
-        domain_features = [feat_dict[key] for key in keys]
+        weights_dict = {
+            "num_of_issues": 0.1,  
+            "num_of_bids": 0.001,
+            "avg_vals_per_issue": 0.2,  
+            "avg_bid_util": 1,  
+        }
+
+        domain_features = [feat_dict[key]*weights_dict[key] for key in keys]
+
+
+
         
         # feature_values = np.array(list(domain_data.values()))
 
