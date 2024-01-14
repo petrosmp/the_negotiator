@@ -31,6 +31,12 @@ import numpy as np
 
 class magicianNN:
     r_state = 69 # nice
+    weights_dict = {
+            "num_of_issues": 0.1,  
+            "num_of_bids": 0.001,
+            "avg_vals_per_issue": 0.2,  
+            "avg_bid_util": 1,  
+        }
     def __init__(self, num_agents, input_features, hidden_layer_size=16) :
         """ Initialization method 
         Args: num_agents, input_features
@@ -70,9 +76,13 @@ class magicianNN:
     def predict_scores(self, domain_data):
         """ Gets predicted scores for each agent to initialize the UCB algorithm with meaningful data, learned from the utility gained on specific negotiation domains. """
         # Tensorflow needs numpy array to work
-        feature_values = np.array(list(domain_data.values()))
-        feature_values = feature_values.reshape(1, -1)
-        scores_prediction = self._model.predict(feature_values)
+        # Selected keys/features from the dictionary
+        keys = ["num_of_issues", "num_of_bids",  "avg_vals_per_issue", "avg_bid_util"]
+
+
+        domain_features = [domain_data[key]*self.weights_dict[key] for key in keys]
+        domain_features = np.array([domain_features])
+        scores_prediction = self._model.predict(domain_features)
         return scores_prediction
 
     def saveNN(self):
@@ -86,21 +96,10 @@ class magicianNN:
     # X and y must be converted to numpy for it to work
     # y is the target variable "agent_id"
     def train_model(self, agent_scores, domain_data):
-
         # Selected keys/features from the dictionary
         keys = ["num_of_issues", "num_of_bids",  "avg_vals_per_issue", "avg_bid_util"]
-        weights_dict = {
-            "num_of_issues": 0.1,  
-            "num_of_bids": 0.001,
-            "avg_vals_per_issue": 0.2,  
-            "avg_bid_util": 1,  
-        }
+        domain_features = [domain_data[key]*self.weights_dict[key] for key in keys]
 
-        domain_features = [feat_dict[key]*weights_dict[key] for key in keys]
-
-
-
-        
         # feature_values = np.array(list(domain_data.values()))
 
         #domain_features = feature_values.reshape(1, -1)
