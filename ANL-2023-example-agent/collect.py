@@ -33,14 +33,21 @@ settings = {
 # run a session and obtain results in dictionaries
 session_results_trace, session_results_summary, util_result = run_session(settings, verbose=False, care_about="TheNegotiator")
 
-print(f"we got a result of {util_result}")
+# now use the util result to write to the file
+filename = f"dataset_{util_result['agent']}_{time.strftime('%Y%m%d-%H_%M_%S')}.py"
+with open(filename, 'w') as f:
+    f.write(
+        f"""\
+timestamp = "{time.strftime('%Y-%m-%d %H:%M:%S')}",
+running_time = 25,   # minutes
+results = [
+    {{
+        "features": {util_result['features']},
+        "results": {{
+            "{util_result['agent']}": {util_result['utility']},
+        }}
+    }},
+]
+        """
+    )
 
-# plot trace to html file
-if not session_results_trace["error"]:
-    plot_trace(session_results_trace, RESULTS_DIR.joinpath("trace_plot.html"))
-
-# write results to file
-with open(RESULTS_DIR.joinpath("session_results_trace.json"), "w", encoding="utf-8") as f:
-    f.write(json.dumps(session_results_trace, indent=2))
-with open(RESULTS_DIR.joinpath("session_results_summary.json"), "w", encoding="utf-8") as f:
-    f.write(json.dumps(session_results_summary, indent=2))

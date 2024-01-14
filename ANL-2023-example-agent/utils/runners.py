@@ -23,7 +23,7 @@ from uri.uri import URI
 from utils.ask_proceed import ask_proceed
 
 
-def run_session(settings, verbose:bool) -> Tuple[dict, dict]:
+def run_session(settings, verbose:bool, care_about:str) -> Tuple[dict, dict]:
     agents = settings["agents"]
     profiles = settings["profiles"]
     deadline_time_ms = settings["deadline_time_ms"]
@@ -88,10 +88,10 @@ def run_session(settings, verbose:bool) -> Tuple[dict, dict]:
     settings_obj = ObjectMapper().parse(settings_full, NegoSettings)
 
     # create the negotiation session runner object
-    runner = Runner(settings_obj, ClassPathConnectionFactory(), StdOutReporter(), 0, verbose=verbose)
+    runner = Runner(settings_obj, ClassPathConnectionFactory(), StdOutReporter(), 0, verbose=verbose, care_about=care_about)
 
     # run the negotiation session
-    runner.run()
+    util_result = runner.run()
 
     # get results from the session in class format and dict format
     results_class: SAOPState = runner.getProtocol().getState()
@@ -100,7 +100,31 @@ def run_session(settings, verbose:bool) -> Tuple[dict, dict]:
     # add utilities to the results and create a summary
     results_trace, results_summary = process_results(results_class, results_dict)
 
-    return results_trace, results_summary
+    first_opp_bid_util = None
+    first_2_actions = results_trace["actions"][:2]
+    for action in first_2_actions:
+        
+        action = action["Offer"]
+
+        # we need the action to be that of the opponent
+        actor = action["actor"].split('_')[-2]
+        if actor != care_about:
+
+            utilities = action["utilities"]
+            
+            for agent, utility in utilities.items():
+                name = agent.split('_')[-2]
+                if name == care_about:
+                    first_opp_bid_util = float(utility)
+
+
+    util_result["features"].update({"first_opp_bid_util": first_opp_bid_util})
+
+
+    print(f"util result is now:")
+    for k, v in util_result.items():
+        print(f"{k}: {v}")
+    return results_trace, results_summary, util_result
 
 
 def run_tournament(tournament_settings: dict) -> Tuple[list, list]:

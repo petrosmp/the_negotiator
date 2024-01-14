@@ -120,7 +120,6 @@ class TUCStudentsTimeDependentAgent(ConnectionInterceptMixin, DefaultParty):
         try:
             # parse Inform object, based on its specified type
             if isinstance(info, Settings):
-                print(f"{self.__class__.__name__} got settings!")
 
                 # Enter setting information. This is called once at the beginning of a session.
                 # You can add your own code based on your own implementation.
