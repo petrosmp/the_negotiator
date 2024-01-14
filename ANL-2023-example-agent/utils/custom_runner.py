@@ -119,9 +119,9 @@ class Runner:
 		# find out the profile of 
 		care_about = None
 		for agent, profile in result.getParticipants().items():
-			if agent.getName()[:-2].split('_')[-1] == self._care_about:
+			if agent.getName().split('_')[-2] == self._care_about:
 				care_about = {
-					"agent": agent.getName()[:-2].split('_')[-1],		# trim the _x at the end (that indicated the profile) and keep the part after the last '_'
+					"agent": agent.getName().split('_')[-2],		# trim the _x at the end (that indicated the profile) and keep the part after the last '_'
 					"profile": profile.getProfile().getURI().getPath()
 				}
 
@@ -140,7 +140,7 @@ class Runner:
 		
 			# check that we found the agent we care about
 			if not care_about:
-				print("error! could not find the agent we care about in the participants")
+				print(f"\n\nerror! could not find the agent we care about ({self._care_about}) in the participants {tuple([x.getName().split('_')[-2] for x in result.getParticipants().keys()])} - {result.getParticipants().keys()}\n\n")
 			else:
 				profile_file = care_about["profile"]
 				with open(profile_file) as f:
