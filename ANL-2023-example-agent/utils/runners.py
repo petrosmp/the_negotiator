@@ -100,6 +100,30 @@ def run_session(settings, verbose:bool, care_about:str) -> Tuple[dict, dict]:
     # add utilities to the results and create a summary
     results_trace, results_summary = process_results(results_class, results_dict)
 
+    first_opp_bid_util = None
+    first_2_actions = results_trace["actions"][:2]
+    for action in first_2_actions:
+        
+        action = action["Offer"]
+
+        # we need the action to be that of the opponent
+        actor = action["actor"].split('_')[-2]
+        if actor != care_about:
+
+            utilities = action["utilities"]
+            
+            for agent, utility in utilities.items():
+                name = agent.split('_')[-2]
+                if name == care_about:
+                    first_opp_bid_util = float(utility)
+
+
+    util_result["features"].update({"first_opp_bid_util": first_opp_bid_util})
+
+
+    print(f"util result is now:")
+    for k, v in util_result.items():
+        print(f"{k}: {v}")
     return results_trace, results_summary, util_result
 
 
