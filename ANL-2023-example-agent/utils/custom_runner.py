@@ -22,6 +22,9 @@ from geniusweb.protocol.NegoSettings import NegoSettings
 from geniusweb.protocol.NegoState import NegoState
 from geniusweb.simplerunner.ClassPathConnectionFactory import ClassPathConnectionFactory
 
+from geniusweb.protocol.session.SessionResult import SessionResult
+from pyson.ObjectMapper import ObjectMapper
+from geniusweb.profile.utilityspace.LinearAdditiveUtilitySpace import LinearAdditiveUtilitySpace
 
 class Runner:
 	'''
@@ -47,7 +50,7 @@ class Runner:
 
 	def __init__(self, settings:NegoSettings ,
 			connectionfactory:ClassPathConnectionFactory , logger:Reporter ,
-			maxruntime:int, verbose:bool=True):
+			maxruntime:int, verbose:bool=True, care_about:str=None):
 		'''
 		@param settings          the {@link NegoSettings}
 		@param connectionfactory the {@link ProtocolToPartyConnFactory}
@@ -62,7 +65,9 @@ class Runner:
 		self._connectionfactory = connectionfactory;
 		self._maxruntime = maxruntime;
 		self._jackson = ObjectMapper()
-		self.verbose = verbose
+		self._verbose = verbose
+		self._care_about = care_about
+		self._result = None
 
 	def isProperlyStopped(self) -> bool:
 		'''
@@ -97,6 +102,7 @@ class Runner:
 			self._log.log(logging.WARNING, "Connections " + str(openconn)\
 					+" did not close properly at end of run")
 		self._log.log(logging.INFO, "end run")
+		return self._result
 
 	def _handle(self, evt:ProtocolEvent):
 		if isinstance(evt , CurrentNegoState) and \
@@ -105,6 +111,51 @@ class Runner:
 
 	def _stop(self):
 		self._logFinal(logging.INFO, self._protocol.getState())
+
+		# get the result of the negotiation session
+		result: SessionResult = next(iter(self._protocol.getState().getResults()))
+
+		# get the agents that participated in the negotiation and the profile each participated as
+		participants = []
+		care_about = None
+		for agent, profile in result.getParticipants().items():
+			participants.append({
+				"agent": agent.getName()[:-2].split('_')[-1],		# trim the _x at the end (that indicated the profile) and keep the part after the last '_'
+				"profile": profile.getProfile().getURI().getPath()
+			})
+
+			# keep a reference to the agent that we care about (we dont really need the participants list, its here for debugging pruposes, it will be gone next commit)
+			if participants[-1]["agent"] == self._care_about:
+				care_about = participants[-1]
+
+		# get the agreement at which the agents arived
+		agreement = None
+		utility = 0
+		try:
+			agreement = next(iter(result.getAgreements().getMap().values()))
+		except StopIteration:
+			pass
+			# no agreement reached, 0 util for all
+
+		# if there was an agreement find out the utility gained by the agent we care about
+		if agreement:
+		
+			# check that we found the agent we care about
+			if not care_about:
+				print("error! could not find the agent we care about in the participants")
+			else:
+				profile_file = care_about["profile"]
+				with open(profile_file) as f:
+					profile_data = json.load(f)
+				profile: LinearAdditiveUtilitySpace = ObjectMapper().parse(profile_data, LinearAdditiveUtilitySpace)
+				utility = profile.getUtility(agreement)
+		
+		# set the result class variable so we can return it
+		self._result = {
+			"agent": self._care_about,
+			"utility": float(utility)
+		}
+
 		self._properlyStopped = True
 
 	def _logFinal(self, level:int , state: NegoState):
@@ -116,7 +167,7 @@ class Runner:
 		@param state the {@link NegoState} to log
 		'''
 		try:
-			if self.verbose:	# this is the change
+			if self._verbose:	# this is the change
 				self._log.log(level, "protocol ended normally: "
 						+json.dumps(self._jackson.toJson(self._protocol.getState())))
 		except Exception as e:  # catch json issues

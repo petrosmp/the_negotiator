@@ -31,7 +31,9 @@ settings = {
 }
 
 # run a session and obtain results in dictionaries
-session_results_trace, session_results_summary = run_session(settings, verbose=False)
+session_results_trace, session_results_summary, util_result = run_session(settings, verbose=False, care_about="TheNegotiator")
+
+print(f"we got a result of {util_result}")
 
 # plot trace to html file
 if not session_results_trace["error"]:

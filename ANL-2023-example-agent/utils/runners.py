@@ -23,7 +23,7 @@ from uri.uri import URI
 from utils.ask_proceed import ask_proceed
 
 
-def run_session(settings, verbose:bool) -> Tuple[dict, dict]:
+def run_session(settings, verbose:bool, care_about:str) -> Tuple[dict, dict]:
     agents = settings["agents"]
     profiles = settings["profiles"]
     deadline_time_ms = settings["deadline_time_ms"]
@@ -88,10 +88,10 @@ def run_session(settings, verbose:bool) -> Tuple[dict, dict]:
     settings_obj = ObjectMapper().parse(settings_full, NegoSettings)
 
     # create the negotiation session runner object
-    runner = Runner(settings_obj, ClassPathConnectionFactory(), StdOutReporter(), 0, verbose=verbose)
+    runner = Runner(settings_obj, ClassPathConnectionFactory(), StdOutReporter(), 0, verbose=verbose, care_about=care_about)
 
     # run the negotiation session
-    runner.run()
+    util_result = runner.run()
 
     # get results from the session in class format and dict format
     results_class: SAOPState = runner.getProtocol().getState()
@@ -100,7 +100,7 @@ def run_session(settings, verbose:bool) -> Tuple[dict, dict]:
     # add utilities to the results and create a summary
     results_trace, results_summary = process_results(results_class, results_dict)
 
-    return results_trace, results_summary
+    return results_trace, results_summary, util_result
 
 
 def run_tournament(tournament_settings: dict) -> Tuple[list, list]:
