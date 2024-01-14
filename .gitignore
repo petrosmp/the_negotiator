@@ -3,3 +3,5 @@ pyvenv.cfg
 Lib/
 Scripts/
 Include/
+
+dataset_tournament_*.py
