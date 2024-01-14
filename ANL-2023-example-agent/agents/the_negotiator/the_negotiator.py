@@ -97,7 +97,7 @@ class TheNegotiator(DefaultParty):
 
                 print(f"\n\n\n{self.__class__.__name__} got settings!")
                 self._settings = info
-                
+
                 # unpack the settings and store them as class variables for future reference
                 self._me = self._settings.getID()
                 self._progress = self._settings.getProgress()               # progress towards the deadline has to be tracked manually through the use of the Progress object
@@ -114,7 +114,7 @@ class TheNegotiator(DefaultParty):
                 profile_connection.close()            
 
                 # we now have enough data to calculate anything we want. its time to pick a strat.
-                
+
                 # extract features from the domain and get some estimates about agent fitness
                 features = self._extract_features()
                 initial_values = self._magician(features)
@@ -362,6 +362,7 @@ class TheNegotiator(DefaultParty):
         self._ucb[picked_index] = new_estimate + np.sqrt(2 * np.log(self._total_plays)/self._play_count[picked_index])
 
         # update estimate
+
     def _UCB_pick_strategy(self):
         """Pick a strategy that fits the current domain and profile according to our UCB's"""
 
@@ -413,9 +414,11 @@ class TheNegotiator(DefaultParty):
         on the given set of features.
         """
 
-        estimates = [random() for _ in arsenal]
+        nn = AgentLearningNN()
 
-        return estimates
+        nn.load(file_path)
+
+        return nn.predict_scores(features)
 
 
     def set_connection_data(self, data):
