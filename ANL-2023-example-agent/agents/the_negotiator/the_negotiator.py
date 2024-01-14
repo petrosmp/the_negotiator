@@ -46,8 +46,56 @@ from geniusweb.references.Parameters import Parameters
 from pathlib import Path
 import numpy as np
 
+# ML
+import tensorflow as tf
+
 from .arsenal import arsenal
 
+
+class magicianNN:
+    r_state = 69 # nice
+    def __init__(self, num_agents, input_features, hidden_layer_size=16) :
+        """ Initialization method 
+        Args: num_agents, input_features
+        """
+        self._num_agents = num_agents           # Number of agents determines the output layer size
+        self._input_features = input_features   # Number of input features
+        self._model = None
+        # Choosing an ML model
+        self._setupNeuralNetwork(hidden_layer_size)
+
+    def _setupNeuralNetwork(self, hidden_layer_size):
+        """
+        Neural Network Setup method using keras 
+        The NN will have as many neurons as number of features and number of neurons as  number of outputs
+        """
+        self._model = tf.keras.Sequential([
+            tf.keras.layers.Dense(hidden_layer_size, activation='relu', input_shape=(self._input_features,)),
+            tf.keras.layers.Dense(hidden_layer_size, activation='relu'),
+            tf.keras.layers.Dropout(0.3),
+            tf.keras.layers.Dense(self._num_agents, activation='softmax')  # Output layer with sigmoid activation to map to value between 0 and 1, one node per agent
+        ])
+        # Use some default optimizer (adam) and mean_squared_error loss function
+        # Also tested SGD
+        self._model.compile(optimizer='adam',
+                      loss='mean_squared_error')
+                      #metrics=['accuracy'])
+  
+    def loadNN(self, storage_dir):
+        """ Load parameters into the model from storage directory."""
+        model_dir = os.path.join(storage_dir, 'model')  
+        self._model = tf.keras.models.load_model(model_dir)
+        print(f"Model loaded from {model_dir}.")
+
+
+    def predict_scores(self, domain_data):
+        """ Gets predicted scores for each agent to initialize the UCB algorithm with meaningful data, learned from the utility gained on specific negotiation domains. """
+        # Tensorflow needs numpy array to work
+        feature_values = np.array(list(domain_data.values()))
+        feature_values = feature_values.reshape(1, -1)
+        scores_prediction = self._model.predict(feature_values)
+        return scores_prediction
+    
 class TheNegotiator(DefaultParty):
     """Class implementing the negotiator agent."""
 
@@ -410,13 +458,19 @@ class TheNegotiator(DefaultParty):
 
     def _magician(self, features):
         """
+        Will help by giving UCB a headstart, using data from negotiations on known domains
+        For each domain, we will get scores for each agent based on the characteristics of the domain,
+        which will be converted into UCB "starting" confidence bounds, passing the batton to UCB which will continue playing different algorithms
+
         Predict the performance of each agent in the arsenal based
         on the given set of features.
         """
-
-        nn = AgentLearningNN()
-
-        nn.load(file_path)
+        numOfAgents = 5
+        hiddenLayerSize = 5
+        domainFeatureNum = 4
+        nn = magicianNN(numOfAgents, domainFeatureNum, hiddenLayerSize)
+        # TODO check if storage dir is initialized
+        nn.loadNN(self._storage_dir)
 
         return nn.predict_scores(features)
 
