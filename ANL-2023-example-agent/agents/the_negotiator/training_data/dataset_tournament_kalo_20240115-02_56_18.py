@@ -1,3 +1,5 @@
+# domains 00-07
+
 results = [
 	{
 		"features": {'avg_bid_util': 0.30639243190454546, 'avg_vals_per_issue': 10.75, 'bid_util_std_dev': 0.24595463575871232, 'num_of_bids': 5808, 'num_of_issues': 4, 'weight_std_dev': 0.24820415326903777},

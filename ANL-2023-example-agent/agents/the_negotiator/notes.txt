@@ -82,3 +82,10 @@
     
     We don't even need to change the PartyId if we make the strategy agent have the same ID as us, which
     is totally fine since it does not interact with anyone else. Straight up stealing.
+
+5) we can show a slide in the presentation in which the same set of agents have completely different performances
+   in different domains (sets of features). for example in one agent1>agent2>agent3 but in the other agent3>agent2>agent1.
+   In order to do this as dramatically as possible, we can find the 2 domains with the "most different" agent performances:
+   by taking the performances as vectors, the set of vectors that has the smallest inner product is the "most different"
+   (but are the "most different" vectors orthogonal or opposite? Opposite probably...). The catch is that we need to try
+   all possible pairs, so its O((|domains|*2) choose 2). That's not that big tbh, for 50 domains its ~5000 different pairs.
