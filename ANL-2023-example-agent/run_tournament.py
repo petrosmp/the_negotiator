@@ -35,7 +35,7 @@ tournament_settings = {
         },
     ],
     "profile_sets": [
-        ["domains/domain07/profileA.json", "domains/domain07/profileB.json"],
+        ["domains/domain42/profileA.json", "domains/domain42/profileB.json"],
     ],
     "deadline_time_ms": 10000,
 }
