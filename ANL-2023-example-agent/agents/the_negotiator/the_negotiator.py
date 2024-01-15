@@ -48,29 +48,48 @@ import numpy as np
 
 # ML
 import tensorflow as tf
-
 from .arsenal import arsenal
 
 
 UCB_DIR_PREFIX = "UCB_data"
 
+"""
+Neural Network used for performance prediction
+"""
 class magicianNN:
     r_state = 69 # nice
-    def __init__(self, num_agents, input_features, hidden_layer_size=16) :
-        """ Initialization method 
-        Args: num_agents, input_features
-        """
-        self._num_agents = num_agents           # Number of agents determines the output layer size
-        self._input_features = input_features   # Number of input features
-        self._model = None
-        # Choosing an ML model
-        self._setupNeuralNetwork(hidden_layer_size)
+    # scaling the value in decimal steps
+    weights_dict = {
+        "avg_bid_util": 1,
+        "avg_vals_per_issue": 0.01,
+        "bid_util_std_dev": 1,
+        "num_of_bids": 0.0001,
+        "num_of_issues": 0.1,  
+        "weight_std_dev": 1,
+    }
+    # scaling the value with numbers with respect to the thresholds provided by the statistics
+    numerical_normalization_dict = {
+        "avg_bid_util": 1.9,
+        "avg_vals_per_issue": 7.5,
+        "bid_util_std_dev": 3,
+        "num_of_bids": 1,
+        "num_of_issues": 1.4,
+        "weight_std_dev": 3,
+    }
+    # Keys to access dictionary data for agents and domain data
+    agent_keys = ["Agent007", "DreamTeam109Agent", "TemplateAgent", "GEAAgent", "Agent33"]
+    keys = ["avg_bid_util", "avg_vals_per_issue", "bid_util_std_dev", "num_of_bids", "num_of_issues", "weight_std_dev"]
 
-    def _setupNeuralNetwork(self, hidden_layer_size):
-        """
+    def __init__(self, num_agents, input_features, hidden_layer_size=16) :
+        """ 
+        Initialization method 
+        Args: num_agents, input_features
         Neural Network Setup method using keras 
         The NN will have as many neurons as number of features and number of neurons as  number of outputs
         """
+        self._num_agents = num_agents           # Number of agents determines the output layer size
+        self._input_features = input_features   # Number of input features
+        
         self._model = tf.keras.Sequential([
             tf.keras.layers.Dense(hidden_layer_size, activation='relu', input_shape=(self._input_features,)),
             tf.keras.layers.Dense(hidden_layer_size, activation='relu'),
@@ -78,24 +97,23 @@ class magicianNN:
             tf.keras.layers.Dense(self._num_agents, activation='softmax')  # Output layer with sigmoid activation to map to value between 0 and 1, one node per agent
         ])
         # Use some default optimizer (adam) and mean_squared_error loss function
-        # Also tested SGD
         self._model.compile(optimizer='adam',
                       loss='mean_squared_error')
-                      #metrics=['accuracy'])
-  
+
     def loadNN(self, storage_dir):
         """ Load parameters into the model from storage directory."""
-        model_dir = os.path.join(storage_dir, 'model')  
+        model_dir = Path(storage_dir) / 'model' 
         self._model = tf.keras.models.load_model(model_dir)
-        print(f"Model loaded from {model_dir}.")
-
+        print(f"Model loaded successfully from {model_dir}.")
 
     def predict_scores(self, domain_data):
         """ Gets predicted scores for each agent to initialize the UCB algorithm with meaningful data, learned from the utility gained on specific negotiation domains. """
         # Tensorflow needs numpy array to work
-        feature_values = np.array(list(domain_data.values()))
-        feature_values = feature_values.reshape(1, -1)
-        scores_prediction = self._model.predict(feature_values)
+        # Selected keys/features from the dictionary
+        domain_features = [domain_data[key]*self.weights_dict[key]*self.numerical_normalization_dict[key] for key in self.keys]
+
+        domain_features = np.array([domain_features])
+        scores_prediction = self._model.predict(domain_features)
         return scores_prediction
     
 class TheNegotiator(DefaultParty):
@@ -114,6 +132,7 @@ class TheNegotiator(DefaultParty):
         self._settings: Settings = None  # type:ignore
         self._connection_data: ActionWithBid = None
         self.getReporter().log(logging.INFO, "party is initialized")
+        #TODO init model, load model
 
     # Competition type (do not change this function)
     def getCapabilities(self) -> Capabilities:
@@ -488,6 +507,8 @@ class TheNegotiator(DefaultParty):
         Predict the performance of each agent in the arsenal based
         on the given set of features.
         """
+        #TODO use magicianNN
+        # self.nn
         estimates = [random() for _ in arsenal]
 
         return estimates
@@ -559,3 +580,4 @@ def UCB_write(data_path: Path, arsenal: list[DefaultParty], ucb: list[int]):
     with open(data_path, 'w') as f:
         for agent, estimate in zip(arsenal, ucb):
             f.write(f"{agent.__name__}: {estimate}\n")  # elements of arsenal are classes, so just .__name__ is enough
+

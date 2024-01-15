@@ -100,17 +100,18 @@ class magicianNN:
         file_path = os.path.join(model_dir, filename)
         self._model.save(file_path)
   
-    # On new data, do a forward pass (and backpropagation)
-    # X and y must be converted to numpy for it to work
-    # y is the target variable "agent_id"
+
     def train_model(self, agent_dict, domain_data, num_epochs=8):
-        """ Training method using dictionary data """
+        """ 
+        Training method using dictionary data 
+        On new data, do a forward pass (and backpropagation)
+        X and y must be converted to numpy for it to work
+        y is the target variable "agent_id"
+        """
         # Selected keys/features from the dictionary
         agent_scores = [agent_dict[agent_name] for agent_name in self.agent_keys]
         domain_features = [domain_data[key]*self.weights_dict[key]*self.numerical_normalization_dict[key] for key in self.keys]
 
-        # feature_values = np.array(list(domain_data.values()))
-        #domain_features = feature_values.reshape(1, -1)
         X = np.array([domain_features])
         y = np.array([agent_scores])
 
