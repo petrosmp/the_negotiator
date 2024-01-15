@@ -187,7 +187,7 @@ class TheNegotiator(DefaultParty):
 
                 # in order to get the profile (preferences) and the domain info we need a connection
                 profile_connection = ProfileConnectionFactory.create(
-                    info.getProfile().getURI(), self.getReporter()
+                    info.getProfile().getURI(), self._reporter
                 )
                 self._profile: LinearAdditiveUtilitySpace = cast(LinearAdditiveUtilitySpace, profile_connection.getProfile())
                 self._domain = self._profile.getDomain()
@@ -201,7 +201,7 @@ class TheNegotiator(DefaultParty):
                 if not self.counter_dir.exists():
                     self.counter_dir.mkdir()
 
-                self.counter_file = self.counter_dir / "counter"
+                self.counter_file = self.counter_dir / f"{self._domain.getName()}_{self._profile.getName()[-1]}.counter"
                 if self.counter_file.exists():
                     self.counter = counter_parse(self.counter_file)
                 else:
@@ -293,10 +293,10 @@ class TheNegotiator(DefaultParty):
                     try:
                         deal: Bid = next(iter(info.getAgreements().getMap().values()))
                         utility = float(self._profile.getUtility(deal))
-                        self.getReporter().log(logging.INFO, f"Final outcome: bid={deal} giving us a utility of: {utility} (special thanks to {self._strat.__class__.__name__})")
+                        self._reporter.log(logging.INFO, f"Final outcome: bid={deal} giving us a utility of: {utility} (special thanks to {self._strat.__class__.__name__})")
                     except StopIteration:
                         utility = 0.0     # no reservation values in our profiles
-                        self.getReporter().log(logging.INFO, "no agreement reached!")
+                        self._reporter.log(logging.INFO, "no agreement reached!")
                     
                     # update the UCB estimates based on this pull right here
                     self._UCB_round(self._strat, utility)
@@ -310,10 +310,10 @@ class TheNegotiator(DefaultParty):
                     try:
                         deal: Bid = next(iter(info.getAgreements().getMap().values()))
                         utility = float(self._profile.getUtility(deal))
-                        self.getReporter().log(logging.INFO, f"***Final outcome: bid={deal} giving us a utility of: {utility} (special thanks to {self._strat.__class__.__name__})")
+                        self._reporter.log(logging.INFO, f"***Final outcome: bid={deal} giving us a utility of: {utility} (special thanks to {self._strat.__class__.__name__})")
                     except StopIteration:
                         utility = 0.0     # no reservation values in our profiles
-                        self.getReporter().log(logging.INFO, "***no agreement reached!")
+                        self._reporter.log(logging.INFO, "***no agreement reached!")
                     
                     self._reporter.log(logging.INFO, f"***got reward of {round(utility, 2)}")
 
@@ -327,7 +327,7 @@ class TheNegotiator(DefaultParty):
                 # stop this party and free resources.
                 self.terminate()
         except Exception as ex:
-            self.getReporter().log(logging.CRITICAL, "Failed to handle info", ex)
+            self._reporter.log(logging.CRITICAL, "Failed to handle info", ex)
         self._updateRound(info)
 
     # Override
@@ -341,7 +341,7 @@ class TheNegotiator(DefaultParty):
 
     # Override
     def terminate(self):
-        self.getReporter().log(logging.INFO, "party is terminating:")
+        self._reporter.log(logging.INFO, "party is terminating:")
         super().terminate()
         if self._profileint != None:
             self._profileint.close()
