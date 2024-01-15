@@ -157,7 +157,7 @@ def extractTrain(results):
     """ Extract agent results and domain features dictionary. """
     for item in results:
         if 'features' in item and 'results' in item:
-            agent_nn.train_model(item['results'], item['features'], 6)
+            agent_nn.train_model(item['results'], item['features'], 2)
 
 def extractPredict(features_dict):
     """ Extract domain features dictionary and predict. """
