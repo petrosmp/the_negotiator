@@ -518,9 +518,21 @@ class TheNegotiator(DefaultParty):
         self._nn = magicianNN(numOfAgents, domainFeatureNum, hiddenLayerSize)
         self._nn.loadNN()
         
-        estimates = self._nn.predict_scores(features)
+        _estimates = self._nn.predict_scores(features)
 
-        return np.array([estimates])
+        try:
+            estimates = next(iter(_estimates))
+        except StopIteration:
+            self._reporter.log(logging.CRITICAL, f"Could not convert NN output '{_estimates}' (of type {type(_estimates)}) to array!")
+            print(f"estimates {_estimates[0]}")
+            return None
+
+
+        print(f"estimates {estimates} (type {estimates.__class__.__name__})")
+        for i,j in enumerate(estimates):
+            print(f"estimate {i}: {j} (type: {j.__class__.__name__})")
+        
+        return estimates
 
 
     def set_connection_data(self, data):
