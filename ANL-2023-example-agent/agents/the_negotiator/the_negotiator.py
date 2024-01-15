@@ -213,7 +213,7 @@ class TheNegotiator(DefaultParty):
                     initial_values = self._magician(features)
 
                     # initialize the UCB machinery with the predictions
-                    self._init_UCB(arsenal, initial_values, [0 for _ in arsenal], 0, None, first_time=True)
+                    self._init_UCB(arsenal, initial_values, [10 for _ in arsenal], 50, None, first_time=True)   # initialize with total plays >0 to give some weight to the NN's predictions
 
                 # use UCB to pick the strategy
                 self._strat: DefaultParty = self._UCB_pick_strategy()
@@ -527,5 +527,4 @@ def UCB_write(data_path: Path, arsenal: list[DefaultParty], ucb: list[int], play
 
         f.write(f"play_counts: {[int(x) for x in play_counts]}\n")
         f.write(f"total_plays: {total_plays}\n")
-
         f.write(f"estimates: {[float(x) for x in estimates]}")
