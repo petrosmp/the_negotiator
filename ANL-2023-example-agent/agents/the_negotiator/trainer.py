@@ -90,6 +90,7 @@ class magicianNN:
         # Tensorflow needs numpy array to work
         # Selected keys/features from the dictionary
         domain_features = [domain_data[key]*self.weights_dict[key]*self.numerical_normalization_dict[key] for key in self.keys]
+
         domain_features = np.array([domain_features])
         scores_prediction = self._model.predict(domain_features)
         return scores_prediction
@@ -171,12 +172,12 @@ def extractTrain(results):
 def ectractPredict(features_dict):
     for item in features_dict:
         if 'features' in item and 'results' in item:
-            return agent_nn.predict_scores(item['results'])
+            return agent_nn.predict_scores(item['features'])
 
 extractTrain(dataset_tournament_kalo_20240115__02_56_18.results)
 
 
-agent_nn.saveNN()
+#agent_nn.saveNN()
 agent_nn.loadNN()
 print(ectractPredict(dataset_tournament_kalo_20240115__02_56_18.results))
 
