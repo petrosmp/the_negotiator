@@ -183,7 +183,7 @@ class TheNegotiator(DefaultParty):
 
                     self._init_UCB(arsenal, previous_ucb_data)
                 else:       # if this is a profile we haven't seen before, we need the magician
-                    self._reporter.log(logging.WARNING, f"ucb data path does not exist, using magician")
+                    self._reporter.log(logging.INFO, f"ucb data path '{self._ucb_data_file}' does not exist, using magician")
                     # extract features from the domain and get some estimates about agent fitness
                     features = self._extract_features()
                     initial_values = self._magician(features)
@@ -536,7 +536,10 @@ def UCB_parse(data_path: Path, arsenal: list[DefaultParty]):
                     return False, error
                 
                 # set the element corresponding to the agent to its score
-                ret[_arsenal.index(agent)] = score
+                try:
+                    ret[_arsenal.index(agent)] = score
+                except Exception as e:
+                    return False, f"error parsing UCB data: {e}"
 
     # check that we dont return data that will cause problems (there is a check for "data is None" in the caller, but not a check for "None in data")
     if None in ret:
