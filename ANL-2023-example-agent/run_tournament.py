@@ -33,6 +33,17 @@ tournament_settings = {
         {
             "class": "agents.linear_agent.linear_agent.LinearAgent",
         },
+        {
+            "class": "agents.template_agent.template_agent.TemplateAgent",
+        },
+        {
+            "class": "agents.tuc_students_agent.tuc_students_time_dependent_agent.TUCStudentsTimeDependentAgent",
+            "parameters": {"storage_dir": "agent_storage/TUCStudentsTimeDependentAgent"},
+        },
+        {
+            "class": "agents.CSE3210.agent27.agent27.Agent27",
+            "parameters": {"storage_dir": "agent_storage/Agent27"},
+        },
     ],
     "profile_sets": [
         ["domains/domain42/profileA.json", "domains/domain42/profileB.json"],
