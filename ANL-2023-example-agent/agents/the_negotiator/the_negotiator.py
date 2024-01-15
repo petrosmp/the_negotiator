@@ -197,7 +197,7 @@ class TheNegotiator(DefaultParty):
                 # if we have played in this domain as this profile before, we already have UCB set up
                 self._ucb_data_file = self._ucb_data_dir / f"{self._domain.getName()}_{self._profile.getName()[-1]}.ucb"
                 if self._ucb_data_file.exists():
-                    success, previous_ucb_data = UCB_parse(self._ucb_data_file, arsenal)
+                    success, previous_ucb_data, play_counts, total_plays, estimates = UCB_parse(self._ucb_data_file, arsenal)
                     
                     # if for some reason the existing UCB data is corrupted, just call the magician
                     if not success:
@@ -205,7 +205,7 @@ class TheNegotiator(DefaultParty):
                         features = self._extract_features()
                         previous_ucb_data = self._magician(features)
 
-                    self._init_UCB(arsenal, previous_ucb_data)
+                    self._init_UCB(arsenal, previous_ucb_data, play_counts, total_plays, estimates)
                 else:       # if this is a profile we haven't seen before, we need the magician
                     self._reporter.log(logging.INFO, f"ucb data path '{self._ucb_data_file}' does not exist, using magician")
                     # extract features from the domain and get some estimates about agent fitness
@@ -213,7 +213,7 @@ class TheNegotiator(DefaultParty):
                     initial_values = self._magician(features)
 
                     # initialize the UCB machinery with the predictions
-                    self._init_UCB(arsenal, initial_values)
+                    self._init_UCB(arsenal, initial_values, [10 for _ in arsenal], 50, None, first_time=True)   # initialize with total plays >0 to give some weight to the NN's predictions
 
                 # use UCB to pick the strategy
                 self._strat: DefaultParty = self._UCB_pick_strategy()
@@ -266,7 +266,7 @@ class TheNegotiator(DefaultParty):
                 self._reporter.log(logging.INFO, f"got reward of {round(utility, 2)}, updated UCB to {[round(x, 2) for x in self._ucb]}")
 
                 # save the updated UCB data for future use
-                UCB_write(self._ucb_data_file, arsenal, self._ucb)
+                UCB_write(self._ucb_data_file, arsenal, self._ucb, self._play_count, self._total_plays, self.estimates)
 
                 # pass the info to the strategy agent so it can terminate gracefully
                 self._strat.notifyChange(info)
@@ -276,25 +276,6 @@ class TheNegotiator(DefaultParty):
         except Exception as ex:
             self.getReporter().log(logging.CRITICAL, "Failed to handle info", ex)
         self._updateRound(info)
-
-    def getE(self) -> float:
-        """
-        @return the E value that controls the party's behaviour. Depending on the
-                value of e, extreme sets show clearly different patterns of
-               behaviour [1]:
-
-               1. Boulware: For this strategy e &lt; 1 and the initial offer is
-                maintained till time is almost exhausted, when the agent concedes
-                up to its reservation value.
-
-                2. Conceder: For this strategy e &gt; 1 and the agent goes to its
-                reservation value very quickly.
-
-                3. When e = 1, the price is increased linearly.
-
-                4. When e = 0, the agent plays hardball.
-        """
-        return self._e
 
     # Override
     def getDescription(self) -> str:
@@ -331,93 +312,7 @@ class TheNegotiator(DefaultParty):
         if isinstance(self._progress, ProgressRounds):
             self._progress = self._progress.advance()
 
-    def _myTurn(self):
-        self._updateUtilSpace()
-        bid = self._makeBid()
-
-        myAction: Action
-        if bid == None or (
-            self._lastReceivedBid != None
-            and self._utilspace.getUtility(self._lastReceivedBid)
-            >= self._utilspace.getUtility(bid)
-        ):
-            # if bid==null we failed to suggest next bid.
-            myAction = Accept(self._me, self._lastReceivedBid)
-        else:
-            myAction = Offer(self._me, bid)
-        self.getConnection().send(myAction)
-
-    def _updateUtilSpace(self) -> LinearAdditive:  # throws IOException
-        newutilspace = self._profileint.getProfile()
-        if not newutilspace == self._utilspace:
-            self._utilspace = cast(LinearAdditive, newutilspace)
-            self._extendedspace = ExtendedUtilSpace(self._utilspace)
-        return self._utilspace
-
-    def _makeBid(self) -> Bid:
-        """
-        @return next possible bid with current target utility, or null if no such
-                bid.
-        """
-        time = self._progress.get(round(clock() * 1000))
-
-        utilityGoal = self._getUtilityGoal(
-            time,
-            self.getE(),
-            self._extendedspace.getMin(),
-            self._extendedspace.getMax(),
-        )
-        options: ImmutableList[Bid] = self._extendedspace.getBids(utilityGoal)
-        if options.size() == 0:
-            # if we can't find good bid, get max util bid....
-            options = self._extendedspace.getBids(self._extendedspace.getMax())
-        # pick a random one.
-        return options.get(randint(0, options.size() - 1))
-
-    def _getUtilityGoal(
-        self, t: float, e: float, minUtil: Decimal, maxUtil: Decimal
-    ) -> Decimal:
-        """
-        @param t       the time in [0,1] where 0 means start of nego and 1 the
-                       end of nego (absolute time/round limit)
-        @param e       the e value that determinses how fast the party makes
-                       concessions with time. Typically around 1. 0 means no
-                       concession, 1 linear concession, &gt;1 faster than linear
-                       concession.
-        @param minUtil the minimum utility possible in our profile
-        @param maxUtil the maximum utility possible in our profile
-        @return the utility goal for this time and e value
-        """
-
-                
-        ft1 = round(Decimal(1 - pow(t, 1 / e)), 6)  # defaults ROUND_HALF_UP
-
-        # ft1 is a normalized value [0,1], that decreases with time t
-
-        # we translate ft1 according to the range of utilities in the current domain, using minUtil and maxUtil values
-        # such that: ft1=0 -> util = minUtil, ft1=1 -> util = maxUtil, and using linear interpolation for ft1 in between (0,1)  
-        util = minUtil + (maxUtil - minUtil) * ft1
-
-        # bound the value according to [minUtil, maxUtil] in case ft1 is out of the desired range [0,1]
-        if util < minUtil:
-            util = minUtil
-        elif util > maxUtil:
-            util = maxUtil
-
-        return util
-
-    def _delayResponse(self):  # throws InterruptedException
-        """
-        Do random delay of provided delay in seconds, randomized by factor in
-        [0.5, 1.5]. Does not delay if set to 0.
-
-        @throws InterruptedException
-        """
-        delay = self._settings.getParameters().getDouble("delay", 0, 0, 10000000)
-        if delay > 0:
-            sleep(delay * (0.5 + random()))
-
-    def _init_UCB(self, arms, initial_values):
+    def _init_UCB(self, arms, initial_values, play_counts, total_plays, estimates, first_time=False):
         """
         Initialize the UCB machinery.
 
@@ -430,10 +325,10 @@ class TheNegotiator(DefaultParty):
 
         """ UCB inits"""
         k = len(arsenal)
-        self._play_count = np.zeros((k,))             # arm pulls
-        self._total_plays = 0                         # total arm pulls
-        self.estimates = initial_values               # average performance for negotiation round
-        self._ucb = initial_values                    # ucb estimate for each arm
+        self._play_count = play_counts                  # arm pulls
+        self._total_plays = total_plays                 # total arm pulls
+        self.estimates = initial_values if first_time else estimates               # average performance for negotiation round
+        self._ucb = [float("inf") for _ in range(k)] if first_time else initial_values   # ucb estimate for each arm
 
     def _UCB_round(self, picked_strategy, reward):
         """
@@ -453,10 +348,13 @@ class TheNegotiator(DefaultParty):
         new_estimate = (old_estimate * (max(1, self._play_count[picked_index] - 1)) + reward)/max(2, self._play_count[picked_index])
         self.estimates[picked_index] = new_estimate
 
+        self._reporter.log(logging.INFO, f"estimate for {picked_strategy.__class__.__name__} is {new_estimate}")
+        self._reporter.log(logging.INFO, f"the sqrt factor is {np.sqrt(2 * np.log(self._total_plays)/self._play_count[picked_index])}")
+
         # Update UCB value
         self._ucb[picked_index] = new_estimate + np.sqrt(2 * np.log(self._total_plays)/self._play_count[picked_index])
 
-        # update estimate
+        self._reporter.log(logging.INFO, f"updated UCB to {self._ucb}, since we played arm #{picked_index} (aka {picked_strategy.__class__}) and we got reward {reward}")
 
     def _UCB_pick_strategy(self):
         """Pick a strategy that fits the current domain and profile according to our UCB's"""
@@ -538,7 +436,6 @@ class TheNegotiator(DefaultParty):
         
         return estimates
 
-
     def set_connection_data(self, data):
         """Setter for the custom connection to use in order to send us the data"""
         self._connection_data = data
@@ -571,30 +468,52 @@ def UCB_parse(data_path: Path, arsenal: list[DefaultParty]):
     # create an array the size of the arsenal
     ret = [None for _ in arsenal]
 
+    play_counts = None
+    total_plays = None
+    estimates = None
+
     with open(data_path, 'r') as f:
         for line in f.readlines():
             if line:
-                try:
-                    agent = line.split(': ')[0]
-                    score = float(line.split(': ')[1])
-                except Exception as e:
-                    error = f"error parsing UCB data: {e}"
-                    return False, error
                 
-                # set the element corresponding to the agent to its score
-                try:
-                    ret[_arsenal.index(agent)] = score
-                except Exception as e:
-                    return False, f"error parsing UCB data: {e}"
+                if "play_counts" in line:
+                    play_counts = line.split(": ")[-1]
+                    play_counts = play_counts[1:][:-2]
+                    play_counts = [int(x) for x in play_counts.split(", ")]
+                elif "total_plays" in line:
+                    total_plays = int(line.split(": ")[-1])
+                elif "estimates" in line:
+                    estimates = line.split(": ")[-1]
+                    estimates = estimates[1:][:-1]
+                    estimates = [float(x) for x in estimates.split(", ") if x and x!=" "]
+                else:
+                    try:
+                        agent = line.split(': ')[0]
+                        score = float(line.split(': ')[1])
+                    except Exception as e:
+                        error = f"error parsing UCB data: {e}"
+                        return False, error
+                    
+                    # set the element corresponding to the agent to its score
+                    try:
+                        ret[_arsenal.index(agent)] = score
+                    except Exception as e:
+                        return False, f"error parsing UCB data: {e}"
 
     # check that we dont return data that will cause problems (there is a check for "data is None" in the caller, but not a check for "None in data")
     if None in ret:
         error = "error parsing the data: did not get a score for the following agents: {[x for i, x in enumerate(_arsenal) if ret[i] is None]}"
         return False, error
 
-    return True, ret
+    if play_counts is None or total_plays is None or estimates is None:
+        error = "error parsing the data: did not get a score for the following agents: {[x for i, x in enumerate(_arsenal) if ret[i] is None]}"
+        return False, error
 
-def UCB_write(data_path: Path, arsenal: list[DefaultParty], ucb: list[int]):
+    print(f"read UCB from file: {ret}")
+
+    return True, ret, play_counts, total_plays, estimates
+
+def UCB_write(data_path: Path, arsenal: list[DefaultParty], ucb: list[int], play_counts: list[int], total_plays: int, estimates):
     """
     Write the given data in the file at the given path.
     
@@ -606,3 +525,6 @@ def UCB_write(data_path: Path, arsenal: list[DefaultParty], ucb: list[int]):
         for agent, estimate in zip(arsenal, ucb):
             f.write(f"{agent.__name__}: {estimate}\n")  # elements of arsenal are classes, so just .__name__ is enough
 
+        f.write(f"play_counts: {[int(x) for x in play_counts]}\n")
+        f.write(f"total_plays: {total_plays}\n")
+        f.write(f"estimates: {[float(x) for x in estimates]}")
