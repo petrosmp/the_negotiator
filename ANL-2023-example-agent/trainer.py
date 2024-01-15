@@ -32,11 +32,28 @@ import numpy as np
 class magicianNN:
     r_state = 69 # nice
     weights_dict = {
-            "num_of_issues": 0.1,  
-            "num_of_bids": 0.001,
-            "avg_vals_per_issue": 0.2,  
-            "avg_bid_util": 1,  
-        }
+        "avg_bid_util": 1,
+        "avg_vals_per_issue": 0.1,
+        "bid_util_std_dev": 1,
+
+        "num_of_bids": 0.001,
+        "num_of_issues": 0.1,  
+        "num_of_bids": 0.0001,  
+        "weight_std_dev": 1,
+    }
+    numerical_normalization_dict = {
+        "avg_bid_util": 1,
+        "avg_vals_per_issue": 2,
+        "bid_util_std_dev": 1,
+        
+        "num_of_bids": 1,
+        "num_of_issues": 1,
+        "num_of_bids": 4,    
+        "weight_std_dev": 1,
+    }
+    agent_keys = ["Agent007", "DreamTeam109Agent", "TemplateAgent", "GEAAgent", "Agent33"]
+    keys = ["avg_bid_util", "avg_vals_per_issue", "bid_util_std_dev", "num_of_bids", "num_of_issues", "num_of_bids", "weight_std_dev"]
+
     def __init__(self, num_agents, input_features, hidden_layer_size=16) :
         """ Initialization method 
         Args: num_agents, input_features
@@ -77,10 +94,7 @@ class magicianNN:
         """ Gets predicted scores for each agent to initialize the UCB algorithm with meaningful data, learned from the utility gained on specific negotiation domains. """
         # Tensorflow needs numpy array to work
         # Selected keys/features from the dictionary
-        keys = ["num_of_issues", "num_of_bids",  "avg_vals_per_issue", "avg_bid_util"]
-
-
-        domain_features = [domain_data[key]*self.weights_dict[key] for key in keys]
+        domain_features = [domain_data[key]*self.weights_dict[key]*self.numerical_normalization_dict[key] for key in self.keys]
         domain_features = np.array([domain_features])
         scores_prediction = self._model.predict(domain_features)
         return scores_prediction
@@ -95,22 +109,18 @@ class magicianNN:
     # On new data, do a forward pass (and backpropagation)
     # X and y must be converted to numpy for it to work
     # y is the target variable "agent_id"
-    def train_model(self, agent_scores, domain_data):
+    def train_model(self, agent_dict, domain_data):
         # Selected keys/features from the dictionary
-        keys = ["num_of_issues", "num_of_bids",  "avg_vals_per_issue", "avg_bid_util"]
-        domain_features = [domain_data[key]*self.weights_dict[key] for key in keys]
+        agent_scores = [agent_dict[agent_name] for agent_name in self.agent_keys]
+        domain_features = [domain_data[key]*self.weights_dict[key]*self.numerical_normalization_dict[key] for key in self.keys]
 
         # feature_values = np.array(list(domain_data.values()))
-
         #domain_features = feature_values.reshape(1, -1)
         X = np.array([domain_features])
         y = np.array([agent_scores])
 
-        print("X:", X.shape)
-        print("y:", y.shape)
         # Model training step
         # TODO change epochs
-        #self.model.fit(X, y, epochs=10)
         self._model.fit(X, y)
 
 # Usage
@@ -120,7 +130,7 @@ class magicianNN:
 # Neural Network parameters setup and model initialization
 numOfAgents = 5
 hiddenLayerSize = 5
-domainFeatureNum = 4
+domainFeatureNum = 7
 agent_nn = magicianNN(numOfAgents, domainFeatureNum, hiddenLayerSize)
 
 """
