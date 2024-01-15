@@ -52,6 +52,8 @@ import tensorflow as tf
 from .arsenal import arsenal
 
 
+UCB_DIR_PREFIX = "UCB_data"
+
 class magicianNN:
     r_state = 69 # nice
     def __init__(self, num_agents, input_features, hidden_layer_size=16) :
@@ -151,6 +153,12 @@ class TheNegotiator(DefaultParty):
                 self._parameters = self._settings.getParameters()            # what are parameters? https://tracinsy.ewi.tudelft.nl/pubtrac/GeniusWeb/wiki/WikiStart#PartyParameters
                 self._storage_dir = self._parameters.get("storage_dir")
 
+                # check that the directory in which the UCB data will be saved exists
+                self._ucb_data_dir = Path(self._storage_dir) / UCB_DIR_PREFIX
+
+                if not self._ucb_data_dir.exists():
+                    self._ucb_data_dir.mkdir()
+
                 # in order to get the profile (preferences) and the domain info we need a connection
                 profile_connection = ProfileConnectionFactory.create(
                     info.getProfile().getURI(), self.getReporter()
@@ -161,13 +169,27 @@ class TheNegotiator(DefaultParty):
                 profile_connection.close()            
 
                 # we now have enough data to calculate anything we want. its time to pick a strat.
+                
+                # if we have played in this domain as this profile before, we already have UCB set up
+                self._ucb_data_file = self._ucb_data_dir / f"{self._domain.getName()}_{self._profile.getName()[-1]}.ucb"
+                if self._ucb_data_file.exists():
+                    success, previous_ucb_data = UCB_parse(self._ucb_data_file, arsenal)
+                    
+                    # if for some reason the existing UCB data is corrupted, just call the magician
+                    if not success:
+                        self._reporter.log(logging.WARNING, f"there was an error parsing the data at {self._ucb_data_file}: {previous_ucb_data}. Calling the magician...")
+                        features = self._extract_features()
+                        previous_ucb_data = self._magician(features)
 
-                # extract features from the domain and get some estimates about agent fitness
-                features = self._extract_features()
-                initial_values = self._magician(features)
+                    self._init_UCB(arsenal, previous_ucb_data)
+                else:       # if this is a profile we haven't seen before, we need the magician
+                    self._reporter.log(logging.WARNING, f"ucb data path does not exist, using magician")
+                    # extract features from the domain and get some estimates about agent fitness
+                    features = self._extract_features()
+                    initial_values = self._magician(features)
 
-                # initialize the UCB machinery with the predictions
-                self._init_UCB(arsenal, initial_values)
+                    # initialize the UCB machinery with the predictions
+                    self._init_UCB(arsenal, initial_values)
 
                 # use UCB to pick the strategy
                 self._strat: DefaultParty = self._UCB_pick_strategy()
@@ -213,12 +235,14 @@ class TheNegotiator(DefaultParty):
                 except StopIteration:
                     utility = 0.0     # no reservation values in our profiles
                     self.getReporter().log(logging.INFO, "no agreement reached!")
-                    print("no agreement reached!\n\n")
                 
                 # update the UCB estimates based on this pull right here
                 self._UCB_round(self._strat, utility)
 
-                print(f"got reward of {round(utility, 2)}, updated UCB to {[round(x, 2) for x in self._ucb]}")
+                self._reporter.log(logging.INFO, f"got reward of {round(utility, 2)}, updated UCB to {[round(x, 2) for x in self._ucb]}")
+
+                # save the updated UCB data for future use
+                UCB_write(self._ucb_data_file, arsenal, self._ucb)
 
                 # pass the info to the strategy agent so it can terminate gracefully
                 self._strat.notifyChange(info)
@@ -418,7 +442,7 @@ class TheNegotiator(DefaultParty):
 
         instance = clas()
 
-        print(f"picked stategy {clas.__name__} because UCB is {[round(x, 2) for x in self._ucb]}")
+        self._reporter.log(logging.INFO, f"picked strategy {clas.__name__} because UCB is {[round(x, 2) for x in self._ucb]}")
         return instance
 
     def _extract_features(self):
@@ -472,3 +496,63 @@ class TheNegotiator(DefaultParty):
     def set_connection_data(self, data):
         """Setter for the custom connection to use in order to send us the data"""
         self._connection_data = data
+
+def UCB_parse(data_path: Path, arsenal: list[DefaultParty]):
+    """
+    Parse the data in the given path and return it in an array,
+    formatted in the same way as the given arsenal.
+
+    For example, if the contents of the file are:
+
+        Agent2: 0.47362867532420694
+        Agent5: 0.3106295100984454
+        Agent1: 0.6513009282512279
+        Agent3: 0.6643482559837177
+        Agent4: 0.2796158075868863
+
+    and the "arsenal" argument is:
+    
+        [Agent1, Agent2, Agent3, Agent4, Agent5],
+        
+    then the following array will be returned:
+
+        [0.6513009282512279, 0.47362867532420694, 0.6643482559837177, 0.2796158075868863, 0.3106295100984454].    
+    """
+
+    # keep the names of the agents in the arsenal as strings instead of classes
+    _arsenal = [x.__name__ for x in arsenal]
+
+    # create an array the size of the arsenal
+    ret = [None for _ in arsenal]
+
+    with open(data_path, 'r') as f:
+        for line in f.readlines():
+            if line:
+                try:
+                    agent = line.split(': ')[0]
+                    score = float(line.split(': ')[1])
+                except Exception as e:
+                    error = f"error parsing UCB data: {e}"
+                    return False, error
+                
+                # set the element corresponding to the agent to its score
+                ret[_arsenal.index(agent)] = score
+
+    # check that we dont return data that will cause problems (there is a check for "data is None" in the caller, but not a check for "None in data")
+    if None in ret:
+        error = "error parsing the data: did not get a score for the following agents: {[x for i, x in enumerate(_arsenal) if ret[i] is None]}"
+        return False, error
+
+    return True, ret
+
+def UCB_write(data_path: Path, arsenal: list[DefaultParty], ucb: list[int]):
+    """
+    Write the given data in the file at the given path.
+    
+    Overwrites the file if it already exists.
+    Assumes arsenal and ucb have the same length.
+    """
+
+    with open(data_path, 'w') as f:
+        for agent, estimate in zip(arsenal, ucb):
+            f.write(f"{agent.__name__}: {estimate}\n")  # elements of arsenal are classes, so just .__name__ is enough
