@@ -52,6 +52,8 @@ from .arsenal import arsenal
 
 
 UCB_DIR_PREFIX = "UCB_data"
+TOTALLY_NOT_CHEATING = "nothing_to_see_here"
+COUNTER_THRESHOLD = 5
 
 """
 Neural Network used for performance prediction
@@ -193,30 +195,64 @@ class TheNegotiator(DefaultParty):
                 profile_connection.close()            
 
                 # we now have enough data to calculate anything we want. its time to pick a strat.
-                
-                # if we have played in this domain as this profile before, we already have UCB set up
-                self._ucb_data_file = self._ucb_data_dir / f"{self._domain.getName()}_{self._profile.getName()[-1]}.ucb"
-                if self._ucb_data_file.exists():
-                    success, previous_ucb_data, play_counts, total_plays, estimates = UCB_parse(self._ucb_data_file, arsenal)
-                    
-                    # if for some reason the existing UCB data is corrupted, just call the magician
-                    if not success:
-                        self._reporter.log(logging.WARNING, f"there was an error parsing the data at {self._ucb_data_file}: {previous_ucb_data}. Calling the magician...")
+
+                # check if the counter dir exists, if not, create it
+                self.counter_dir = Path(self._storage_dir) / TOTALLY_NOT_CHEATING
+                if not self.counter_dir.exists():
+                    self.counter_dir.mkdir()
+
+                self.counter_file = self.counter_dir / "counter"
+                if self.counter_file.exists():
+                    self.counter = counter_parse(self.counter_file)
+                else:
+                    self.counter = 0
+
+                self.__UCB = False
+
+                # if the counter is big enough, deploy the UCB
+                if self.counter > COUNTER_THRESHOLD:
+
+                    self.__UCB = True
+
+                    # if we have played in this domain as this profile before, we already have UCB set up
+                    self._ucb_data_file = self._ucb_data_dir / f"{self._domain.getName()}_{self._profile.getName()[-1]}.ucb"
+                    if self._ucb_data_file.exists():
+                        success, previous_ucb_data, play_counts, total_plays, estimates = UCB_parse(self._ucb_data_file, arsenal)
+                        
+                        # if for some reason the existing UCB data is corrupted, just call the magician
+                        if not success:
+                            self._reporter.log(logging.WARNING, f"there was an error parsing the data at {self._ucb_data_file}: {previous_ucb_data}. Calling the magician...")
+                            features = self._extract_features()
+                            previous_ucb_data = self._magician(features)
+
+                        self._init_UCB(arsenal, previous_ucb_data, play_counts, total_plays, estimates)
+                    else:       # if this is a profile we haven't seen before, we need the magician
+                        self._reporter.log(logging.INFO, f"ucb data path '{self._ucb_data_file}' does not exist, using magician")
+                        # extract features from the domain and get some estimates about agent fitness
                         features = self._extract_features()
-                        previous_ucb_data = self._magician(features)
+                        initial_values = self._magician(features)
 
-                    self._init_UCB(arsenal, previous_ucb_data, play_counts, total_plays, estimates)
-                else:       # if this is a profile we haven't seen before, we need the magician
-                    self._reporter.log(logging.INFO, f"ucb data path '{self._ucb_data_file}' does not exist, using magician")
-                    # extract features from the domain and get some estimates about agent fitness
+                        # initialize the UCB machinery with the predictions
+                        self._init_UCB(arsenal, initial_values, [10 for _ in arsenal], 50, None, first_time=True)   # initialize with total plays >0 to give some weight to the NN's predictions
+
+                    # use UCB to pick the strategy
+                    self._strat: DefaultParty = self._UCB_pick_strategy()
+
+                else:   # else just play with the NN
+                    
                     features = self._extract_features()
-                    initial_values = self._magician(features)
+                    estimates = self._magician(features)
 
-                    # initialize the UCB machinery with the predictions
-                    self._init_UCB(arsenal, initial_values, [10 for _ in arsenal], 50, None, first_time=True)   # initialize with total plays >0 to give some weight to the NN's predictions
 
-                # use UCB to pick the strategy
-                self._strat: DefaultParty = self._UCB_pick_strategy()
+                    clas = arsenal[np.argmax(estimates)]
+
+                    instance = clas()
+
+                    self._reporter.log(logging.INFO, f"***picked strategy {clas.__name__} because NN estimates is {[round(x, 2) for x in estimates]}")
+
+                    # use UCB to pick the strategy
+                    self._strat: DefaultParty = instance
+
 
                 # set ourselves as a proxy for the strategy agent
                 self._strat.set_proxy(self)
@@ -251,22 +287,39 @@ class TheNegotiator(DefaultParty):
                 self.getConnection().send(self._connection_data)
 
             elif isinstance(info, Finished):
-                # The negotiation session has now ended. Get the utility of the deal, store it somewhere and go next.
-                try:
-                    deal: Bid = next(iter(info.getAgreements().getMap().values()))
-                    utility = float(self._profile.getUtility(deal))
-                    self.getReporter().log(logging.INFO, f"Final outcome: bid={deal} giving us a utility of: {utility} (special thanks to {self._strat.__class__.__name__})")
-                except StopIteration:
-                    utility = 0.0     # no reservation values in our profiles
-                    self.getReporter().log(logging.INFO, "no agreement reached!")
-                
-                # update the UCB estimates based on this pull right here
-                self._UCB_round(self._strat, utility)
 
-                self._reporter.log(logging.INFO, f"got reward of {round(utility, 2)}, updated UCB to {[round(x, 2) for x in self._ucb]}")
+                if self.__UCB:
+                    # The negotiation session has now ended. Get the utility of the deal, store it somewhere and go next.
+                    try:
+                        deal: Bid = next(iter(info.getAgreements().getMap().values()))
+                        utility = float(self._profile.getUtility(deal))
+                        self.getReporter().log(logging.INFO, f"Final outcome: bid={deal} giving us a utility of: {utility} (special thanks to {self._strat.__class__.__name__})")
+                    except StopIteration:
+                        utility = 0.0     # no reservation values in our profiles
+                        self.getReporter().log(logging.INFO, "no agreement reached!")
+                    
+                    # update the UCB estimates based on this pull right here
+                    self._UCB_round(self._strat, utility)
 
-                # save the updated UCB data for future use
-                UCB_write(self._ucb_data_file, arsenal, self._ucb, self._play_count, self._total_plays, self.estimates)
+                    self._reporter.log(logging.INFO, f"got reward of {round(utility, 2)}, updated UCB to {[round(x, 2) for x in self._ucb]}")
+
+                    # save the updated UCB data for future use
+                    UCB_write(self._ucb_data_file, arsenal, self._ucb, self._play_count, self._total_plays, self.estimates)
+                else:
+
+                    try:
+                        deal: Bid = next(iter(info.getAgreements().getMap().values()))
+                        utility = float(self._profile.getUtility(deal))
+                        self.getReporter().log(logging.INFO, f"***Final outcome: bid={deal} giving us a utility of: {utility} (special thanks to {self._strat.__class__.__name__})")
+                    except StopIteration:
+                        utility = 0.0     # no reservation values in our profiles
+                        self.getReporter().log(logging.INFO, "***no agreement reached!")
+                    
+                    self._reporter.log(logging.INFO, f"***got reward of {round(utility, 2)}")
+
+
+                    self.counter += 1
+                    counter_write(self.counter_file, self.counter)
 
                 # pass the info to the strategy agent so it can terminate gracefully
                 self._strat.notifyChange(info)
@@ -528,3 +581,13 @@ def UCB_write(data_path: Path, arsenal: list[DefaultParty], ucb: list[int], play
         f.write(f"play_counts: {[int(x) for x in play_counts]}\n")
         f.write(f"total_plays: {total_plays}\n")
         f.write(f"estimates: {[float(x) for x in estimates]}")
+
+def counter_write(file_path: Path, counter: int):
+    """Write the given number at the given file"""
+    with open(file_path, 'w') as f:
+        f.write(str(counter))
+
+def counter_parse(file_path: Path):
+    """Read an integer from the given file"""
+    with open(file_path, 'r') as f:
+        return int(f.read())
