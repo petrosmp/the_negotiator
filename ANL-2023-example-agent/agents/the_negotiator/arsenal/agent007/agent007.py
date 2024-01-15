@@ -21,7 +21,8 @@ from geniusweb.profileconnection.ProfileConnectionFactory import ProfileConnecti
 from geniusweb.progress.ProgressTime import ProgressTime
 from geniusweb.references.Parameters import Parameters
 from tudelft_utilities_logging.ReportToLogger import ReportToLogger
-from .connection_intercept_mixin import ConnectionInterceptMixin
+
+from ..connection_intercept_mixin import ConnectionInterceptMixin
 
 class agentBidHistory:
     def __init__(self):
