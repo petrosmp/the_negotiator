@@ -14,9 +14,7 @@ def run_tournament(tournament_settings: dict, verbose:bool) -> Tuple[list, list]
     profile_sets = tournament_settings["profile_sets"]
     deadline_time_ms = tournament_settings["deadline_time_ms"]
 
-    num_sessions = (factorial(len(opponents)) // factorial(len(opponents) - 2)) * len(
-        profile_sets
-    )
+    num_sessions = (len(agents)) * (len(opponents)) * len(profile_sets) * 2
     if num_sessions > 100:
         message = (
             f"WARNING: this would run {num_sessions} negotiation sessions. Proceed?"
@@ -29,6 +27,7 @@ def run_tournament(tournament_settings: dict, verbose:bool) -> Tuple[list, list]
     tournament_steps = []
     util_results = []
     print(f"profile sets are {profile_sets}\n\n\n")
+    session_no = 1
     for agent in agents:
         for raw_profiles in profile_sets:
             for profiles in permutations(raw_profiles, 2):
@@ -47,12 +46,15 @@ def run_tournament(tournament_settings: dict, verbose:bool) -> Tuple[list, list]
                     }
 
                     # run a single negotiation session
+                    print(f"running session {session_no}/{num_sessions}...")
                     _, session_results_summary, util_result = run_session(settings, verbose, agent["class"].split('.')[-1])
 
                     # assemble results
                     tournament_steps.append(settings)
                     tournament_results.append(session_results_summary)
                     util_results.append(util_result)
+
+                    session_no += 1
 
     tournament_results_summary = process_tournament_results(tournament_results)
 
