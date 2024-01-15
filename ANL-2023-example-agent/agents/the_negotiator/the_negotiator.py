@@ -100,9 +100,10 @@ class magicianNN:
         self._model.compile(optimizer='adam',
                       loss='mean_squared_error')
 
-    def loadNN(self, storage_dir):
+    def loadNN(self):
         """ Load parameters into the model from storage directory."""
-        model_dir = Path(storage_dir) / 'model' 
+        modelname = "magicNN_alpha"
+        model_dir = Path(__file__).parent / 'model' / modelname
         self._model = tf.keras.models.load_model(model_dir)
         print(f"Model loaded successfully from {model_dir}.")
 
@@ -507,13 +508,16 @@ class TheNegotiator(DefaultParty):
         Predict the performance of each agent in the arsenal based
         on the given set of features.
         """
-        #TODO use magicianNN
+        features = {k: np.float64(v) for k,v in features.items()}
+        # TODO use magicianNN
         # Neural Network parameters setup and model initialization
         numOfAgents = 5
         hiddenLayerSize = 12
         domainFeatureNum = 6
 
         self._nn = magicianNN(numOfAgents, domainFeatureNum, hiddenLayerSize)
+        self._nn.loadNN()
+        
         estimates = self._nn.predict_scores(features)
 
         return np.array([estimates])
