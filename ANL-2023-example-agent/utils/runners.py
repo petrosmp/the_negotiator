@@ -134,7 +134,7 @@ def run_tournament(tournament_settings: dict) -> Tuple[list, list]:
             }
 
             # run a single negotiation session
-            _, session_results_summary = run_session(settings)
+            _, session_results_summary, util_result = run_session(settings, verbose=True, care_about=None)
 
             # assemble results
             tournament_steps.append(settings)
