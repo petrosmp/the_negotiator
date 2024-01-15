@@ -102,7 +102,7 @@ class magicianNN:
 
     def loadNN(self):
         """ Load parameters into the model from storage directory."""
-        modelname = "magicNN_alpha"
+        modelname = "magicNN_beta"
         model_dir = Path(__file__).parent / 'model' / modelname
         try:
             self._model = tf.keras.models.load_model(model_dir)
@@ -110,7 +110,6 @@ class magicianNN:
         except Exception as e:
             print(e)
             
-           
 
     def predict_scores(self, domain_data):
         """ Gets predicted scores for each agent to initialize the UCB algorithm with meaningful data, learned from the utility gained on specific negotiation domains. """
