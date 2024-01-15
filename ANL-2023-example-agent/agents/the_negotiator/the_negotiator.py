@@ -508,10 +508,15 @@ class TheNegotiator(DefaultParty):
         on the given set of features.
         """
         #TODO use magicianNN
-        # self.nn
-        estimates = [random() for _ in arsenal]
+        # Neural Network parameters setup and model initialization
+        numOfAgents = 5
+        hiddenLayerSize = 12
+        domainFeatureNum = 6
 
-        return estimates
+        self._nn = magicianNN(numOfAgents, domainFeatureNum, hiddenLayerSize)
+        estimates = self._nn.predict_scores(features)
+
+        return np.array([estimates])
 
 
     def set_connection_data(self, data):
