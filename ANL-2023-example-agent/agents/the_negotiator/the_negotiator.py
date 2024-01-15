@@ -277,25 +277,6 @@ class TheNegotiator(DefaultParty):
             self.getReporter().log(logging.CRITICAL, "Failed to handle info", ex)
         self._updateRound(info)
 
-    def getE(self) -> float:
-        """
-        @return the E value that controls the party's behaviour. Depending on the
-                value of e, extreme sets show clearly different patterns of
-               behaviour [1]:
-
-               1. Boulware: For this strategy e &lt; 1 and the initial offer is
-                maintained till time is almost exhausted, when the agent concedes
-                up to its reservation value.
-
-                2. Conceder: For this strategy e &gt; 1 and the agent goes to its
-                reservation value very quickly.
-
-                3. When e = 1, the price is increased linearly.
-
-                4. When e = 0, the agent plays hardball.
-        """
-        return self._e
-
     # Override
     def getDescription(self) -> str:
         return (
@@ -330,92 +311,6 @@ class TheNegotiator(DefaultParty):
         # if we get here, round must be increased.
         if isinstance(self._progress, ProgressRounds):
             self._progress = self._progress.advance()
-
-    def _myTurn(self):
-        self._updateUtilSpace()
-        bid = self._makeBid()
-
-        myAction: Action
-        if bid == None or (
-            self._lastReceivedBid != None
-            and self._utilspace.getUtility(self._lastReceivedBid)
-            >= self._utilspace.getUtility(bid)
-        ):
-            # if bid==null we failed to suggest next bid.
-            myAction = Accept(self._me, self._lastReceivedBid)
-        else:
-            myAction = Offer(self._me, bid)
-        self.getConnection().send(myAction)
-
-    def _updateUtilSpace(self) -> LinearAdditive:  # throws IOException
-        newutilspace = self._profileint.getProfile()
-        if not newutilspace == self._utilspace:
-            self._utilspace = cast(LinearAdditive, newutilspace)
-            self._extendedspace = ExtendedUtilSpace(self._utilspace)
-        return self._utilspace
-
-    def _makeBid(self) -> Bid:
-        """
-        @return next possible bid with current target utility, or null if no such
-                bid.
-        """
-        time = self._progress.get(round(clock() * 1000))
-
-        utilityGoal = self._getUtilityGoal(
-            time,
-            self.getE(),
-            self._extendedspace.getMin(),
-            self._extendedspace.getMax(),
-        )
-        options: ImmutableList[Bid] = self._extendedspace.getBids(utilityGoal)
-        if options.size() == 0:
-            # if we can't find good bid, get max util bid....
-            options = self._extendedspace.getBids(self._extendedspace.getMax())
-        # pick a random one.
-        return options.get(randint(0, options.size() - 1))
-
-    def _getUtilityGoal(
-        self, t: float, e: float, minUtil: Decimal, maxUtil: Decimal
-    ) -> Decimal:
-        """
-        @param t       the time in [0,1] where 0 means start of nego and 1 the
-                       end of nego (absolute time/round limit)
-        @param e       the e value that determinses how fast the party makes
-                       concessions with time. Typically around 1. 0 means no
-                       concession, 1 linear concession, &gt;1 faster than linear
-                       concession.
-        @param minUtil the minimum utility possible in our profile
-        @param maxUtil the maximum utility possible in our profile
-        @return the utility goal for this time and e value
-        """
-
-                
-        ft1 = round(Decimal(1 - pow(t, 1 / e)), 6)  # defaults ROUND_HALF_UP
-
-        # ft1 is a normalized value [0,1], that decreases with time t
-
-        # we translate ft1 according to the range of utilities in the current domain, using minUtil and maxUtil values
-        # such that: ft1=0 -> util = minUtil, ft1=1 -> util = maxUtil, and using linear interpolation for ft1 in between (0,1)  
-        util = minUtil + (maxUtil - minUtil) * ft1
-
-        # bound the value according to [minUtil, maxUtil] in case ft1 is out of the desired range [0,1]
-        if util < minUtil:
-            util = minUtil
-        elif util > maxUtil:
-            util = maxUtil
-
-        return util
-
-    def _delayResponse(self):  # throws InterruptedException
-        """
-        Do random delay of provided delay in seconds, randomized by factor in
-        [0.5, 1.5]. Does not delay if set to 0.
-
-        @throws InterruptedException
-        """
-        delay = self._settings.getParameters().getDouble("delay", 0, 0, 10000000)
-        if delay > 0:
-            sleep(delay * (0.5 + random()))
 
     def _init_UCB(self, arms, initial_values):
         """
@@ -537,7 +432,6 @@ class TheNegotiator(DefaultParty):
             print(f"estimate {i}: {j} (type: {j.__class__.__name__})")
         
         return estimates
-
 
     def set_connection_data(self, data):
         """Setter for the custom connection to use in order to send us the data"""
