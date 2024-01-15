@@ -1,22 +1,19 @@
-### Template imports
-import logging
-from random import randint, random
-import traceback
-from typing import cast, Dict, List, Set, Collection
-
 ### ML imports
 import pandas as pd
-#from sklearn.ensemble import RandomForestClassifier
 import tensorflow as tf
 
 ### File Manager
 import os
 import importlib
+import glob
+import importlib.util
 
 ### Maths
-import random
 import numpy as np
+from random import randint, random
 
+### Time
+import datetime
 
 """
     ML class
@@ -25,32 +22,32 @@ import numpy as np
     For each domain, we will get scores for each agent based on the characteristics of the domain,
     which will be converted into UCB "starting" confidence bounds, passing the batton to UCB which will continue playing different algorithms
 """
-
 class magicianNN:
     r_state = 69 # nice
+    # scaling the value in decimal steps
     weights_dict = {
         "avg_bid_util": 1,
-        "avg_vals_per_issue": 0.1,
+        "avg_vals_per_issue": 0.01,
         "bid_util_std_dev": 1,
-
-        "num_of_bids": 0.001,
+        "num_of_bids": 0.0001,
         "num_of_issues": 0.1,  
         "weight_std_dev": 1,
     }
+    # scaling the value with numbers with respect to the thresholds provided by the statistics
     numerical_normalization_dict = {
-        "avg_bid_util": 1,
-        "avg_vals_per_issue": 2,
-        "bid_util_std_dev": 1,
-        
+        "avg_bid_util": 1.9,
+        "avg_vals_per_issue": 7.5,
+        "bid_util_std_dev": 3,
         "num_of_bids": 1,
-        "num_of_issues": 1,
-        "weight_std_dev": 1,
+        "num_of_issues": 1.4,
+        "weight_std_dev": 3,
     }
     agent_keys = ["Agent007", "DreamTeam109Agent", "TemplateAgent", "GEAAgent", "Agent33"]
     keys = ["avg_bid_util", "avg_vals_per_issue", "bid_util_std_dev", "num_of_bids", "num_of_issues", "weight_std_dev"]
 
     def __init__(self, num_agents, input_features, hidden_layer_size=16) :
-        """ Initialization method 
+        """ 
+        Initialization method 
         Args: num_agents, input_features
         """
         self._num_agents = num_agents           # Number of agents determines the output layer size
@@ -95,17 +92,19 @@ class magicianNN:
         scores_prediction = self._model.predict(domain_features)
         return scores_prediction
 
-    def saveNN(self):
+    def saveNN(self,filename="magicianNN"):
+        """ Save the NNs parameters in the given folder. """
         script_dir = os.path.dirname(os.path.realpath(__file__))  # Directory of the script
         model_dir = os.path.join(script_dir, 'model')  
         os.makedirs(model_dir, exist_ok=True) 
-        file_path = os.path.join(model_dir, "magicianNN")
+        file_path = os.path.join(model_dir, filename)
         self._model.save(file_path)
   
     # On new data, do a forward pass (and backpropagation)
     # X and y must be converted to numpy for it to work
     # y is the target variable "agent_id"
-    def train_model(self, agent_dict, domain_data):
+    def train_model(self, agent_dict, domain_data, num_epochs=8):
+        """ Training method using dictionary data """
         # Selected keys/features from the dictionary
         agent_scores = [agent_dict[agent_name] for agent_name in self.agent_keys]
         domain_features = [domain_data[key]*self.weights_dict[key]*self.numerical_normalization_dict[key] for key in self.keys]
@@ -117,7 +116,7 @@ class magicianNN:
 
         # Model training step
         # TODO change epochs
-        self._model.fit(X, y)
+        self._model.fit(X, y, epochs=num_epochs)
 
 # Usage
 # print("Current Working Directory:", os.getcwd())
@@ -125,12 +124,61 @@ class magicianNN:
 
 # Neural Network parameters setup and model initialization
 numOfAgents = 5
-hiddenLayerSize = 10
+hiddenLayerSize = 12
 domainFeatureNum = 6
 agent_nn = magicianNN(numOfAgents, domainFeatureNum, hiddenLayerSize)
 
+
 """
- A testing suite
+Training Data Parser
+"""
+
+def processDataFiles(directory_path):
+    """ Get data files from the given folder """
+    # List all .py files in the directory
+    data_files = glob.glob(os.path.join(directory_path, '*.py'))
+    for file_path in data_files:
+        module_name = os.path.basename(file_path).split('.')[0] #remove .py
+        
+        spec = importlib.util.spec_from_file_location(module_name, file_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        
+        # Check for results varible
+        if hasattr(module, 'results'):
+            extractTrain(module.results)
+            # Debugging/Testing:
+            print(extractPredict(module.results))
+        else:
+            print(f"No 'results' variable in {module_name}")
+
+def extractTrain(results):
+    """ Extract agent results and domain features dictionary. """
+    for item in results:
+        if 'features' in item and 'results' in item:
+            agent_nn.train_model(item['results'], item['features'], 6)
+
+def extractPredict(features_dict):
+    """ Extract domain features dictionary and predict. """
+    for item in features_dict:
+        if 'features' in item and 'results' in item:
+            print(agent_nn.predict_scores(item['features']))
+
+# Path to running script directory 
+script_directory = os.path.dirname(os.path.abspath(__file__))
+# Subfolder training_data
+directory_path = os.path.join(script_directory, 'training_data')
+
+# Processs dataset
+processDataFiles(directory_path)
+
+# Save neural network parameters with timestamp
+current_time = datetime.datetime.now()
+date_time_string = current_time.strftime("%Y_%m_%d_%H_%M_%S")
+agent_nn.saveNN("magicNN_"+str(date_time_string))
+
+"""
+ An initial random testing suite
 """
 
 # data_samples = []
@@ -158,26 +206,3 @@ agent_nn = magicianNN(numOfAgents, domainFeatureNum, hiddenLayerSize)
 #     #data_samples.append((feat_dict, agent_scores))
 #     print(agent_nn.predict_scores(feat_dict))
 # #agent_nn.saveNN()
-
-"""
-Parser
-"""
-from training_data import dataset_tournament_kalo_20240115__02_56_18
-
-def extractTrain(results):
-    for item in results:
-        if 'features' in item and 'results' in item:
-            agent_nn.train_model(item['results'], item['features'])
-
-def ectractPredict(features_dict):
-    for item in features_dict:
-        if 'features' in item and 'results' in item:
-            return agent_nn.predict_scores(item['features'])
-
-extractTrain(dataset_tournament_kalo_20240115__02_56_18.results)
-
-
-#agent_nn.saveNN()
-agent_nn.loadNN()
-print(ectractPredict(dataset_tournament_kalo_20240115__02_56_18.results))
-
