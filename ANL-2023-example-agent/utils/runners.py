@@ -16,14 +16,14 @@ from geniusweb.protocol.NegoSettings import NegoSettings
 from geniusweb.protocol.session.saop.SAOPState import SAOPState
 from geniusweb.simplerunner.ClassPathConnectionFactory import ClassPathConnectionFactory
 from geniusweb.simplerunner.NegoRunner import StdOutReporter
-from .custom_runner import Runner          # used to be "from geniusweb.simplerunner.Runner import Runner"
+from geniusweb.simplerunner.Runner import Runner
 from pyson.ObjectMapper import ObjectMapper
 from uri.uri import URI
 
 from utils.ask_proceed import ask_proceed
 
 
-def run_session(settings, verbose:bool, care_about:str) -> Tuple[dict, dict]:
+def run_session(settings) -> Tuple[dict, dict]:
     agents = settings["agents"]
     profiles = settings["profiles"]
     deadline_time_ms = settings["deadline_time_ms"]
@@ -88,10 +88,10 @@ def run_session(settings, verbose:bool, care_about:str) -> Tuple[dict, dict]:
     settings_obj = ObjectMapper().parse(settings_full, NegoSettings)
 
     # create the negotiation session runner object
-    runner = Runner(settings_obj, ClassPathConnectionFactory(), StdOutReporter(), 0, verbose=verbose, care_about=care_about)
+    runner = Runner(settings_obj, ClassPathConnectionFactory(), StdOutReporter(), 0)
 
     # run the negotiation session
-    util_result = runner.run()
+    runner.run()
 
     # get results from the session in class format and dict format
     results_class: SAOPState = runner.getProtocol().getState()
@@ -100,7 +100,7 @@ def run_session(settings, verbose:bool, care_about:str) -> Tuple[dict, dict]:
     # add utilities to the results and create a summary
     results_trace, results_summary = process_results(results_class, results_dict)
 
-    return results_trace, results_summary, util_result
+    return results_trace, results_summary
 
 
 def run_tournament(tournament_settings: dict) -> Tuple[list, list]:
@@ -134,7 +134,7 @@ def run_tournament(tournament_settings: dict) -> Tuple[list, list]:
             }
 
             # run a single negotiation session
-            _, session_results_summary, util_result = run_session(settings, verbose=True, care_about=None)
+            _, session_results_summary = run_session(settings)
 
             # assemble results
             tournament_steps.append(settings)
