@@ -1,0 +1,135 @@
+% !TeX program = pdflatex
+
+
+\documentclass{article}
+% for the equation* environment
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{amsfonts}
+
+\usepackage{alphabeta}
+
+\usepackage{csquotes}
+\usepackage{subfigure}
+\usepackage{float,lipsum}
+\floatstyle{boxed}
+\usepackage[top=3cm, bottom=3cm]{geometry}
+
+\setlength{\footnotesep}{1.5em} % Adjust the value to set the desired distance
+
+
+
+
+% for images
+\usepackage{graphicx}
+%\graphicspath{{images/}}
+
+% to easily align image to left and right inside the includegraphics
+% options
+\usepackage[export]{adjustbox}
+% and then \includegraphics[width=0.5\textwidth, right]{image}
+
+
+% for captions
+\usepackage{caption}
+
+% for clickable table of contents entries
+\usepackage{hyperref}
+
+\hypersetup{
+	colorlinks=false,
+	linkcolor=black,
+	filecolor=magenta,      
+	urlcolor=blue,
+	pdftitle={TheNegotiator}, % this is what appears as the title in the PDF viewer
+	pdfpagemode=FullScreen,
+}
+
+% to number equations withing sections (1.1, 1.2, 2.1, and so on)
+\numberwithin{equation}{section}
+
+% to rename references to figures and such
+\usepackage{cleveref}
+\crefformat{figure}{fig.~#2#1#3}
+\crefformat{table}{table~#2#1#3}
+
+
+\author{%
+	Petros Bimpiris
+	\and
+	Ioannis Christofilogiannis
+}
+
+\date{
+	\begin{center}
+	\hspace{2.5cm}Technical University of Crete
+	\newline
+	\phantom{-----------------}Multiagent Systems (COMP512)		% what hack?
+	\newline
+	February 2024 
+	\end{center}
+	\vspace{-0.5cm}
+}
+
+\title{
+	\vspace{-2cm}
+	\textbf{TheNegotiator - Using Others To One's Advantage}
+
+	Manipulation 101
+}
+
+
+\begin{document} 
+
+	\maketitle
+
+	\section*{Executive Summary}	\label{sec:execuctive_summary}		% non-technical and brief explanation - as if read by your grandma
+
+		\paragraph*{}
+			This report offers a comprehensive explanation and analysis of the design and the implementation of TheNegotiator agent. Its goal is to explain the basic ideas in a simple manner while simultaneously offering a detailed and robust technical description of the way they were implemented.
+			% TODO: change the reference here to refer to the subsection of the intro that explains the rules
+			The agent was designed to participate in an internal competition at Technical University of Crete, the basic concept of which was that pairs of agents engage in negotiation rounds repeatedly (so that all participants get to play each other) and the winner is declared based on the average \textquotedblleft satisfaction\textquotedblright \ with the results achieved.
+			The basic idea is that the TheNegotiator does not have a strategy of its own but incorporates an \textquotedblleft arsenal\textquotedblright \ of other agents and has a way of picking the best one for each negotiation domain.	% 'domain' is overly technical here, need something like 'setting', 'round' or sth
+
+
+	\section*{Report Structure}	\label{sec:report_structure}		% how this report is organized
+
+		\paragraph*{}
+			% better word for description here?
+			The report begins with a description of the negotiation problem and the competition setting followed by an explanation of the basic ideas, the reasoning behind their adoption and some terminology definitions.
+			We then proceed to the agent implementation, breaking it down to three parts: the way in which we use other agents as our strategy, the way of predicting each agent's performance in a new domain, and the way with which data collected during the competition can be used to further boost our performance. Finally we present and comment on various results that showcase strengths and limitations of our agent and we conclude by discussing possible steps towards improving on our ideas.
+			\hfill
+
+			Each section begins with a brief non-technical explanation of the concepts described therein and proceeds to explain them rigorously.
+
+	\tableofcontents
+	
+	\newpage
+
+	\section{Introduction}		\label{sec:introduction}
+
+	\section{Basic Ideas}		\label{sec:basic_ideas}
+
+	\section{Implementation}		\label{sec:implementation}
+
+		\subsection{High Level Overview}	\label{sec:implementation.high_level_view}
+
+		\subsection{Using Other Agents}		\label{sec:implementation.using_other_agents}
+
+		\subsection{Offline Learning - Neural Network}		\label{sec:implementation.neural_network}
+
+		\subsection{Online Learning - UCB}		\label{sec:implementation.ucb}
+
+	\section{Results}		\label{sec:results}	% edw tha mporousan na paiksoun kai ta logs kalo rolo
+
+	\section{Limitations \& Improvement Proposals}		\label{sec:limitations_improvements}
+
+	\section{Conclusion}		\label{sec:conclusion}
+
+
+	\bibliographystyle{plain}
+	\bibliography{refs}
+
+
+\end{document}

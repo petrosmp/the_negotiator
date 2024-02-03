@@ -8,3 +8,7 @@ dataset_tournament_*.py
 !ANL-2023-example-agent/agents/the_negotiator/training_data/dataset_tournament_*.py
 
 ANL-2023-example-agent/MA
+
+report/latex/*
+!/report/latex/refs.bib
+!report/latex/*.tex
