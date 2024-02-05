@@ -1,0 +1,65 @@
+\subsection{Offline Learning - Neural Network}		\label{sec:implementation.neural_network}
+\paragraph{}
+Our goal was to find the correlation of the domain characteristics with the performance of each of the agents in our arsenal, in order to choose the one that will theoretically give us the best utility. 
+A different strategy might perform better in one domain and worse in another.
+\paragraph{}
+ First we needed to salvage data that will give us insight about the performance of each agent in a given domain. 
+ This was handled by a custom runner, that we called collect\_tournament -MORE- 
+ We set a negotiation setting with 5 agents in the arsenal, 10 opponents and 45 domains, meaning approximately 4500 negotiation rounds and approximately
+10 hours of runtime (split into multiple computers by running the negotiations in separate domains in the same time).
+\paragraph{}
+ From this data we collected the average utility (the negotiation rounds with 10 opponents ) of each of the 5 agents and the characteristics —MORE— of the domain.
+\paragraph{}
+ The next logical step in order to handle this data is to use Machine Learning. Multiple viable methods exist 
+ like CART which was the algorithm of choice for the Research Paper, along with others like Regression methods and a Neural Network , 
+ but we decided to use a Neural Network (albeit with a different architecture) , because we were confident that this would be an effective, simple and efficient approach. 
+ In our problem the Neural Network 
+ is a scalable solution because if the dataset becomes bigger, with more negotiation rounds, 
+ the training time scales up, but we do not need to “carry” a huge dataset or retrain the model from scratch each time new data comes in, 
+ neither is the structure itself growing in disk size, we just do a new training step for the new data.
+
+\begin{figure}[H]
+	\centering
+	\framebox{\includegraphics[scale=0.6]{nn_train.png}}
+	\captionsetup{justification=centering}
+	\caption{Neural Network Training}
+	\label{fig:Neural Network Training}
+\end{figure}
+
+\paragraph{}
+ The Neural Network takes the domain characteristics (X) as input data along with the real average utility that the agents gained (Y) from the negotiation rounds in the specific domain. It’s goal is to train the Network (adjusting the weights and biases) so that giving the characteristics of a new domain gives us a prediction of each agent’s performance in it which can be very beneficial.  
+ The training happens by passing the domain characteristics in a forwards pass, getting the outputs and using the Mean Square Error loss function to calculate the error between the outputs and the real scores and then using the optimizer, adam in our case to adjust the weights and biases with backpropagation.
+ \paragraph{}
+
+The architecture of the Neural Network is simple but a bit more complicated than the one decribed in the research paper \cite{meta_agent_paper}, even though not a lot of data is disclosed about it.
+ We use an input layer of size 6, for each one of the domains characteristics, 
+ a hidden layer of size 12 which was picked -MORE- as 2 times the size of input layer but showed 
+ the best results between the values we tested and an output layer of size 5, for each of the agent's performance.  
+ The input and hidden layers used the relu activation function and the output layer used the softmax activation function, which ensures that the outputs are a value between 0 and 1 —MORE— and is a good fit for our predictions problem. We used 2 epochs for the training because it showed good results with no overfitting, like 3 or more epochs (showing similar results for different input features) and
+  more effective training rounds than 1 epoch. Finally a dropout layer was applied (not shown in the figure, between the hidden layer and the output) with a dropout chance of 30\% that works by 
+  randomly setting a fraction of input units to 0 at each update during training, which helps to make the model more robust and generalize better to unseen data. 
+\paragraph{}
+
+
+% picture here
+\begin{figure}[H]
+\centering
+\framebox{\includegraphics[scale=0.4]{nn_predict.png}}
+\captionsetup{justification=centering}
+\caption{Neural Network Prediction}
+\label{fig:Neural Network Prediction}
+\end{figure}
+
+After the training is done to get the predictions for each agents, 
+all we need is a forward pass of the domain characteristics from the Neural Network. 
+This concludes the off-line training part of the problem, but the scope of the Negotiator does not stop there.
+In the next part we test how the output of the Neural Network can give some knowledge to an on-line algorithm 
+which will continue the learning with a different approach.
+\begin{figure}[H]
+	\centering
+	\framebox{\includegraphics[scale=0.55]{nn_ucb.png}}
+	\captionsetup{justification=centering}
+	\caption{Setting the initial confidence bounds}
+	\label{fig:Setting the initial confidence bounds}
+\end{figure}
+ 
