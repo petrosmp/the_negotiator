@@ -95,7 +95,7 @@
 			This report offers a comprehensive explanation and analysis of the design and the implementation of TheNegotiator agent. Its goal is to explain the basic ideas in a simple manner while simultaneously offering a detailed and robust technical description of the way they were implemented.
 			% TODO: change the reference here to refer to the subsection of the intro that explains the rules
 			The agent was designed to participate in an internal competition at Technical University of Crete, the basic concept of which was that pairs of agents engage in negotiation rounds repeatedly (so that all participants get to play each other) and the winner is declared based on the average \quotes{satisfaction} with the results achieved.
-			The basic idea is that the TheNegotiator does not have a strategy of its own but incorporates an \quotes{arsenal} of other agents and has a way of picking the best one for each negotiation domain. The agent was heavily influenced \cite{meta_agent_paper} and its main idea that \quotes{\emph{a little learning goes a long way}}.	% 'domain' is overly technical here, need something like 'setting', 'round' or sth
+			The basic idea is that the TheNegotiator does not have a strategy of its own but incorporates an \quotes{arsenal} of other agents and has a way of picking the best one for each negotiation domain. The agent was heavily influenced by \cite{meta_agent_paper} and its main idea that \quotes{\emph{a little learning goes a long way}}.	% 'domain' is overly technical here, need something like 'setting', 'round' or sth
 
 
 	\section*{Report Structure}	\label{sec:report_structure}		% how this report is organized
@@ -195,21 +195,28 @@
 				The first step of the implementation was to pick our \quotes{\emph{arsenal}}, i.e. the set of readily available agents that we would use as our set of strategies. We used participants in the \href{https://web.tuat.ac.jp/~katfuji/ANAC2022/}{2022 ANAC competition} \cite{ANAC}, selected through a process described below. We chose to implement a neural network (NN), trained to find correlation between domain characteristics and agent performance to estimate how well those agents would do in a new domain. We also chose to model the competition as a Multi-Armed Bandit (MAB) % TODO: citation for MAB? where was it first defined?
 				setting and implement a modified version of the Upper Confidence Bound (UCB) algorithm to keep learning during the competition while keeping performance as our primary objective.
 
-			% picture here
-			\begin{figure}[h]
+			\paragraph*{}
+				In \ref{fig:high_level_overview} we present the process followed by our agent when asked to participate in a new negotiation session. Observe the distinction between new domains (meaning we have not negotiated in them) and domains we know something about: 
+				\begin{itemize}
+					\item In a never-before-seen domain, we feed its characteristics (see \quotes{features} below) % TODO: add a reference here to where we explain what features we used.
+					to the neural network, which outputs an estimate for the performance of each agent in our arsenal. We then use those estimates to initialize our UCB machinery, which ultimately tells us which strategy we should employ in the upcoming session.
+					
+					% TODO: kapou na peis kai oti to ucb einai pio xrhsimo otan exeis perissoterous antipalous giati paizeis pio polles fores sto idio domain opote ksereis kalytera ti doulevei ekei. sovaro limitation to oti den diaforopoiesi me vash antipalo, alla nai. we could say that it tends to average out over many opponents (since encountering a hardliner for example is equally frequent with encountering a conceider (greedy - non greedy if you will) - which is not really the case, since noone would submit a conceider in a general purpose tournament but yeah.) 
+					\item If we have already encountered the domain we are about to negotiate in, the process above has already taken place, so we do not need to use the NN. We feed the pre-existing estimates to the UCB machinery that once again picks the best available strategy.
+				\end{itemize}
+				In both cases, right after the session ends, we check the utility that its result gave us and feed it to UCB in order to adjust our estimate for the picked strategy. That way we can adapt to the environment, by not just trusting the pre-trained NN to tell the truth, the whole truth and nothing but the truth but rather observing reality on our own and adjusting our beliefs accordingly. % TODO: axreiasth teleftaia protash
+
+			\begin{figure}[H]
 				\centering
-				\framebox{\includegraphics[scale=0.5]{issues_values.pdf}}
+				\framebox{\includegraphics[scale=0.5]{high_level_overview.pdf}}
 				\captionsetup{justification=centering}
-				\caption{test figure}
-				\label{fig:test_figure}
+				\caption{A high-level overview of TheNegotiator's function}
+				\label{fig:high_level_overview}
 			\end{figure}
-
-
 
 		\subsection{Using Other Agents}		\label{sec:implementation.using_other_agents}
 			
 			\paragraph{}
-
 
 		
 		\include{ML}
