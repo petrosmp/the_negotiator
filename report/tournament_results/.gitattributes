@@ -1,0 +1,2 @@
+logs/TheNegotiator_no_tracebacks.log filter=lfs diff=lfs merge=lfs -text
+logs/TheNegotiator.log filter=lfs diff=lfs merge=lfs -text
