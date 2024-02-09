@@ -10,7 +10,7 @@ The files in this directory are the following:
 
     - TheNegotiator_no_tracebacks.log
         The original file, keeping only "meaningful" log entries emitted by TheNegotiator
-        through logging.log(), i.e. no tracebacks. It was obtain by running the following
+        through logging.log(), i.e. no tracebacks. It was obtainεδ by running the following
         command:
             cat TheNegotiator.log | grep " - TheNegotiator - " > TheNegotiator_no_tracebacks.log
 
