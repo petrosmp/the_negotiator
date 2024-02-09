@@ -95,3 +95,85 @@ numpages = {3},
 location = {San Francisco, California, USA},
 series = {AAAI'17}
 }
+
+@inbook{BOA_paper,
+author = {Baarslag, Tim and Hindriks, Koen and Hendrikx, Mark and Dirkzwager, Alex and Jonker, Catholijn},
+year = {2014},
+month = {01},
+pages = {61-83},
+title = {Decoupling Negotiating Agents to Explore the Space of Negotiation Strategies},
+volume = {535},
+isbn = {9784431547570},
+journal = {Studies in Computational Intelligence},
+doi = {10.1007/978-4-431-54758-7_4}
+}
+
+@Inbook{HardHeaded,
+author="van Krimpen, Thijs
+and Looije, Daphne
+and Hajizadeh, Siamak",
+editor="Ito, Takayuki
+and Zhang, Minjie
+and Robu, Valentin
+and Matsuo, Tokuro",
+title="HardHeaded",
+bookTitle="Complex Automated Negotiations: Theories, Models, and Software Competitions",
+year="2013",
+publisher="Springer Berlin Heidelberg",
+address="Berlin, Heidelberg",
+pages="223--227",
+abstract="In this paper the strategy of Hardheaded negotiating agent is described. Our agent won the Automated Negotiating Agents Competition 2011. As the name implies, the agent is hardheaded, it will not concede until the very end. Using a concession function, it generates bids in a monotonic way, which resets to a random value after the dynamic concession limit is reached. In practice, this means that most of the time the agent will cycle through the same range of bids. Since the preferences of the opponent are not known, the agent tries to learn the opponent's preference profile. It chooses bids which it thinks are optimal for the opponent in case there are equivalent bids for itself.",
+isbn="978-3-642-30737-9",
+doi="10.1007/978-3-642-30737-9_17",
+url="https://doi.org/10.1007/978-3-642-30737-9_17"
+}
+
+
+@article{UCB_paper,
+author = {Auer, Peter},
+title = {Using confidence bounds for exploitation-exploration trade-offs},
+year = {2003},
+issue_date = {3/1/2003},
+publisher = {JMLR.org},
+volume = {3},
+issn = {1532-4435},
+abstract = {We show how a standard tool from statistics --- namely confidence bounds --- can be used to elegantly deal with situations which exhibit an exploitation-exploration trade-off. Our technique for designing and analyzing algorithms for such situations is general and can be applied when an algorithm has to make exploitation-versus-exploration decisions based on uncertain information provided by a random process. We apply our technique to two models with such an exploitation-exploration trade-off. For the adversarial bandit problem with shifting our new algorithm suffers only O((ST)1/2) regret with high probability over T trials with S shifts. Such a regret bound was previously known only in expectation. The second model we consider is associative reinforcement learning with linear value functions. For this model our technique improves the regret from O(T3/4) to O(T1/2).},
+journal = {J. Mach. Learn. Res.},
+month = {mar},
+pages = {397–422},
+numpages = {26},
+keywords = {reinforcement learning, online Learning, linear value function, exploitation-exploration, bandit problem}
+}
+
+@article{MAB_Lai_Robbins_1985,
+title = {Asymptotically efficient adaptive allocation rules},
+journal = {Advances in Applied Mathematics},
+volume = {6},
+number = {1},
+pages = {4-22},
+year = {1985},
+issn = {0196-8858},
+doi = {https://doi.org/10.1016/0196-8858(85)90002-8},
+url = {https://www.sciencedirect.com/science/article/pii/0196885885900028},
+author = {T.L Lai and Herbert Robbins}
+}
+
+@article{MAB_paper_2002,
+author = {Auer, Peter and Cesa-Bianchi, Nicol\`{o} and Fischer, Paul},
+title = {Finite-time Analysis of the Multiarmed Bandit Problem},
+year = {2002},
+issue_date = {May-June 2002},
+publisher = {Kluwer Academic Publishers},
+address = {USA},
+volume = {47},
+number = {2–3},
+issn = {0885-6125},
+url = {https://doi.org/10.1023/A:1013689704352},
+doi = {10.1023/A:1013689704352},
+abstract = {Reinforcement learning policies face the exploration versus exploitation dilemma, i.e. the search for a balance between exploring the environment to find profitable actions while taking the empirically best action as often as possible. A popular measure of a policy's success in addressing this dilemma is the regret, that is the loss due to the fact that the globally optimal policy is not followed all the times. One of the simplest examples of the exploration/exploitation dilemma is the multi-armed bandit problem. Lai and Robbins were the first ones to show that the regret for this problem has to grow at least logarithmically in the number of plays. Since then, policies which asymptotically achieve this regret have been devised by Lai and Robbins and many others. In this work we show that the optimal logarithmic regret is also achievable uniformly over time, with simple and efficient policies, and for all reward distributions with bounded support.},
+journal = {Mach. Learn.},
+month = {may},
+pages = {235–256},
+numpages = {22},
+keywords = {finite horizon regret, bandit problems, adaptive allocation rules}
+}

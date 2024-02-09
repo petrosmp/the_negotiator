@@ -30,3 +30,5 @@ ANL-2023-example-agent/.DS_Store
 ANL-2023-example-agent/agents/ANL2022/agentfish/.DS_Store
 ANL-2023-example-agent/agents/ANL2022/BIU_agent/.DS_Store
 ANL-2023-example-agent/agents/ANL2022/tjaronchery10_agent/.DS_Store
+
+*.ipe

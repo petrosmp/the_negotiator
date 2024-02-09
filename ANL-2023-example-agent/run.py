@@ -31,7 +31,7 @@ settings = {
 }
 
 # run a session and obtain results in dictionaries
-session_results_trace, session_results_summary  = run_session(settings)
+session_results_trace, session_results_summary = run_session(settings)
 
 # plot trace to html file
 if not session_results_trace["error"]:
