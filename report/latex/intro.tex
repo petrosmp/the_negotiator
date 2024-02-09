@@ -1,0 +1,51 @@
+
+\paragraph*{}
+In this section we describe the setting of negotiation 
+
+\subsection{The Negotiation Problem}	\label{sec:introduction.the_negotiation_problem}	% TODO: not problem, find a better word
+    First things first: what \emph{exactly} do we mean by \quotes{negotiation}? Why would a computer ever need to do that? Even though we will not defend the existence of the academic field of negotiation algorithms and agents, we will try to provide some motivation for our specific case.	% TODO: this sentence sucks but the meaning is nice, find a better way to say it
+
+    \paragraph*{}
+        The setting of a negotiation is best understood with the help of an example, so let us consider a scenario of two friends in a (peculiar) restaurant, where they must order the same thing, and they must order within a time limit or they get no food. There are 2 issues: what to eat and what to drink. Possible values for the first issue are e.g. steak, salad or soup and for the second one beer or wine. The process is that one friend begins by proposing a value for each issue - for example, a proposal could be: \quotes{steak and beer} - and then the other can either agree or extend a counteroffer. The goal is to reach an agreement and order before the waiter leaves.
+    
+    \paragraph*{}
+        Some of the difficulties of a negotiation setting are apparent in the above example. What if the two friends have completely different tastes (i.e. preference profiles)? Should one agree to something that they do not like, just to avoid the scenario of the waiter leaving? - after all, food you don't like is better than no food at all. What if one friend only cares about food while the other only cares about drink? How are they supposed to find out - remember, they can only talk in terms of offers.
+        Other difficulties are more subtle: What if there are 10 issues, with 20 possible values each? We then have $20^{10}$ different combinations (around 10.2 \emph{trillion}) - there is no way they can check them all before the waiter leaves. What if on top of that, each friend does not know the other's taste? Is an agreement even possible in such a scenario?
+
+    \paragraph*{}
+        The utilization of software agents for negotiations slowly starts to make a lot of sense. However, if we are to make a computer do all that, we need to be quite explicit. The following is a semi-formal definition of the concepts demonstrated in the restaurant example:
+
+        \quad
+        
+        \renewcommand{\arraystretch}{1.5} % Adjust the value as needed
+        \begin{longtable}{l p{290pt}}
+
+                \textbf{Issues}: & The set $I$ of issues that the parties must agree upon values for. In the restaurant example, $I=\{\text{food}, \text{drink}\}$. \\
+
+                \textbf{Values}: & The set $V$ of values for each issue in $I$. In the restaurant example, $V=$ $\{\{\text{steak}, \text{salad}, \text{soup}\}, \{\text{wine}, \text{beer}\}\}$.\\
+
+                \textbf{Offer:} & An assignment $o$ of a value to each issue: $o=\{(i_{1}, v_{1}),$ $(i_{2}, v_{2}), ...\}$, where $i_{j} \in I$ and $v_{j} \in V$. Also referred to as a \emph{bid}. \\
+
+                \textbf{Utility Function:} & A function $u: O \to \mathbb{R}$ (where $O$ is the set of all offers). The utility function of a participant defines their preference profile, so these terms may be used interchangeably. In the restaurant example, suppose that one friend prefers beer to wine and is indifferent between all the food options. Then their utility function could look something like:
+                \begin{equation*}
+                    \begin{aligned}
+                        & u_{1}((\text{food}: \textit{any}), (\text{drink}: \text{beer}))=1, \\
+                        & u_{1}((\text{food}: \textit{any}), (\text{drink}: \text{wine}))=0.5,
+                    \end{aligned}
+                \end{equation*}
+                with the exact values depending on how much they like each alternative.\\
+
+                \textbf{Domain:} & A negotiation domain $d$ is defined as a triad $(I, V, P)$, where $I$ and $V$ are defined above and $P$ is the set of preference profiles of the domain\protect\footnotemark.\\
+
+                \textbf{Negotiation Session:} & A negotiation session $s$ is a sequence of offers and counteroffers, that begins when each participant is informed of the domain and their preference profile and ends either with an agreement or when a timeout is reached. \\
+
+                \textbf{Competition:} & A competition $C$ is defind as a pair $(A, D)$, where $A$ is the set of all agents participating in $C$ and $D$ is the set of all domains that will be used. Every pair of agents in $A$ plays in every domain in $D$ twice, so they both play as both preference profiles. Also referred to as a tournament (though it most certainly is not one).\\	% TODO: better language
+
+        \end{longtable}
+
+        \footnotetext{The utility functions are given to the agents as part of the domain. The restaurant example equivalent would be someone telling you what your taste is when you enter. This might seem weird at first, but it is a way to force the agents to be able to handle every possible preference profile that we might need them to have - an agent that can only negotiate with a pre-designed preference profile would be of little use compared to one that can adapt its strategy to any given profile.}
+
+
+\subsection{Other Things}	\label{sec:introduction.other_things}
+    Some other introductory things that we need to say about negotiations, agents and strategies.
+    For example define strategy, define strategy agent, define protocol etc.
