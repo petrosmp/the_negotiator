@@ -50,7 +50,7 @@ The architecture of the Neural Network is simple but a bit more complicated than
  We use an input layer of size 6, for each one of the domains characteristics, 
  a hidden layer of size 12 which is 2 times the size of input layer, in order to be able to detect hidden patterns in the data but showed 
  the best results between the values we tested and an output layer of size 5, for each of the agent's performance.  
- The input and hidden layers used the relu activation function and the output layer used the softmax activation function, which ensures that the outputs are a value between 0 and 1 —MORE— and is a good fit for our predictions problem. We used 2 epochs for the training because it showed good results with no overfitting, like 3 or more epochs (showing similar results for different input features) and
+ The input and hidden layers used the relu activation function and the output layer used the softmax activation function, which ensures that the outputs are a value between 0 and 1 and is a good fit for our predictions problem. We used 2 epochs for the training because it showed good results with no overfitting, like 3 or more epochs (showing similar results for different input features) and
   more effective training rounds than 1 epoch. Finally a dropout layer was applied (not shown in the figure, between the hidden layer and the output) with a dropout chance of 30\% that works by 
   randomly setting a fraction of input units to 0 at each update during training, which helps to make the model more robust and generalize better to unseen data. 
 \paragraph{}
