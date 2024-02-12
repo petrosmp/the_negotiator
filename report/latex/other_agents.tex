@@ -8,7 +8,7 @@ The agents that comprised our arsenal were the following:
 
     \item \textbf{DreamTeam109:} The winner of ANL 2022 in both individual utility and social welfare. Also implements the BOA framework. Learns the best time to start compromising versus each opponent. See \href{https://tracinsy.ewi.tudelft.nl/pubtrac/GeniusWebThirdParties/browser/ANL2022/dreamteam109_agent/DreamTeam109 ANL2022 Agent Strategy.pdf}{here} for more information.
 
-    \item \textbf{Agent007:} Uses frequency-based opponent modeling \cite{HardHeaded}. Came in second in the social welfare category of ANL 2022. Observed to achieve very high utilities in experimental tournaments run while exploring the alternatives. % Its function remains a mystery, since no report is available we haven't read the code. % TODO: remove!
+    \item \textbf{Agent007:} Uses frequency-based opponent modeling \cite{HardHeaded}. Came in second in the social welfare category of ANL 2022. Observed to achieve very high utilities in experimental tournaments run while exploring the alternatives.
 
     \item \textbf{TemplateAgent:} Given from ANAC as an example of an agent implementation to help competition participants. Acts like a hardliner for the best part of a negotiation session and starts conceding linearly close to the end. As a result of the hardliner behavior, many opponents may accept its demands before the conceding period begins in order to avoid a disagreement. Observed to perform well in various experiments as well.
 
@@ -22,8 +22,7 @@ We refer to agents that TheNegotiator uses as \emph{strategy agents}.
 The inquisitive and skeptic reader might have had some thoughts along the lines of \quotes{those agents were made to participate in competitions, not to be used by other agents. Was that not a problem?} \textendash \ and they would be correct. In order to use readily available agents as part of our arsenal we had to make some adjustments to their code. We made the modification process very simple (2 lines of code per agent) since changing arsenal configuration was a crucial part of our process and we had to keep its overhead as small as possible.
 
 \paragraph*{}
-The fact that the agents were made to participate in the same competition meant that there was a lot of uniformity in their design, and thus they could all be interacted with in the same way. Since they were all designed to communicate with the same machinery (henceforth referred to as the \emph{protocol}), we had to \emph{be the protocol} as far as they were concerned: we had to do everything the protocol would do if they were in a real tournament. % TODO: what is a protocol? how does the reader know?
-This begs the question of \emph{what does the protocol do}. Basically the process is as follows: it creates the agent (instantiates its class), passing only the path to its storage directory as a constructor argument. The rest of the interactions take place through a method that all agents have to implement, named \texttt{notifyChange} that is called by the protocol whenever something happens, and contains the agent's logic as to how to handle each event. The possible event types are the following:
+The fact that the agents were made to participate in the same competition meant that there was a lot of uniformity in their design, and thus they could all be interacted with in the same way. Since they were all designed to communicate with the same machinery (henceforth referred to as the \emph{protocol}), we had to \emph{be the protocol} as far as they were concerned: we had to do everything the protocol would do if they were in a real tournament. This begs the question of \emph{what does the protocol do}. Basically the process is as follows: it creates the agent (instantiates its class), passing only the path to its storage directory as a constructor argument. The rest of the interactions take place through a method that all agents have to implement, named \texttt{notifyChange} that is called by the protocol whenever something happens, and contains the agent's logic as to how to handle each event. The possible event types are the following:
 \renewcommand{\arraystretch}{1.5} % Adjust the value as needed
 \begin{longtable}{l p{290pt}}
 
@@ -38,8 +37,7 @@ This begs the question of \emph{what does the protocol do}. Basically the proces
 \end{longtable}
 
 \paragraph*{}
-The way in which one would mimic the protocol is quite straightforward. When we are notified of a new negotiation session (through a \texttt{Settings} event) we will select the appropriate agent and instantiate it, giving it a directory (inside what the protocol gave us) to use for its purposes. Every other event can just be passed to the strategy agent % TODO: to xoume orisei pouthena ?!
-as-is, and it will do its thing. However, in the case of a \texttt{YourTurn} event, the way the agent sends its action to the protocol is not so straightforward, and thus requires a more intrusive approach. % TODO: intrusive in the sense that we intrude its code and alter it, better way to say that?
+The way in which one would mimic the protocol is quite straightforward. When we are notified of a new negotiation session (through a \texttt{Settings} event) we will select the appropriate agent and instantiate it, giving it a directory (inside what the protocol gave us) to use for its purposes. Every other event can just be passed to the strategy agent as-is, and it will do its thing. However, in the case of a \texttt{YourTurn} event, the way the agent sends its action to the protocol is not so straightforward, and thus requires a more intrusive approach.
 
 \paragraph*{}
 The way the agent sends its action to the protocol is the following (see \cref{fig:protocol-agent_connection}):
@@ -59,13 +57,12 @@ Luckily, the only time agents may need to send data to the protocol is at the en
 \end{figure}
 
 
-% TODO: this here paragraph is up for review
 \paragraph*{}
-Unfortunately the way the protocol establishes this connection is quite complicated, so much so that using it to establish a such a connection between TheNegotiator and the strategy agent is neither guaranteed to work nor worth the hustle. % TODO: h zwh me ekane hustla
+Unfortunately the way the protocol establishes this connection is quite complicated, so much so that using it to establish a connection between TheNegotiator and the strategy agent is neither guaranteed to work nor worth the hustle. % h zwh me ekane hustla
 Our approach (see \cref{fig:agent-agent_connection}) was extremely simple, and based on the fact that the connection is just an attribute of the agent, and as such can be overwritten easily.
 
 \paragraph*{}
-We created a \texttt{CustomConnection} class that mimics the connection at the agent's end. Objects of this class are linked with a proxy when created, and when \texttt{send()} is called, they just copy that data to an attribute of the proxy.	% TODO: attribute or class variable?
+We created a \texttt{CustomConnection} class that mimics the connection at the agent's end. Objects of this class are linked with a proxy when created, and when \texttt{send()} is called, they just copy that data to an attribute of the proxy.
 
 \paragraph*{}
 In order to \quotes{plant} the custom connection in the agents we want to use, we created the \texttt{ConnectionInterceptMixin}, that offers two methods. One is used to override the connection's \texttt{get()} method and return the custom connection instead of the real one. The other one lets TheNegotiator set itself as the proxy, giving it access to all the data sent through that connection. All one then has to do to make an agent usable by TheNegotiator is make it include the \texttt{ConnectionInterceptMixin}.
